@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPSS Residency - Best Stay in Nagalapuram</title>
+
+<meta name="description" content="Affordable AC & Non-AC rooms near Sri Vedanarayana Swami Temple, Nagalapuram. Book SPSS Residency now.">
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+body {font-family:'Poppins',sans-serif;margin:0;background:#f4f6f8;}
+
+.slider {height:60vh;position:relative;}
+.slide {position:absolute;width:100%;height:100%;background-size:cover;background-position:center;opacity:0;transition:1s;}
+.slide.active {opacity:1;}
+.overlay {position:absolute;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;justify-content:center;align-items:center;color:white;flex-direction:column;}
+
+section {padding:40px 20px;max-width:1100px;margin:auto;}
+h2{text-align:center;}
+
+.rooms,.gallery {display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;}
+.room{background:white;border-radius:10px;overflow:hidden;box-shadow:0 5px 15px rgba(0,0,0,0.1);}
+.room img{width:100%;height:180px;object-fit:cover;}
+.room div{padding:15px;}
+
+.gallery img{width:100%;height:200px;object-fit:cover;border-radius:10px;}
+
+.btn{padding:12px 20px;margin:10px;background:#27ae60;color:white;text-decoration:none;border-radius:25px;display:inline-block;}
+
+form{display:grid;gap:10px;max-width:500px;margin:auto;}
+input,textarea{padding:10px;border-radius:5px;border:1px solid #ccc;}
+
+footer{text-align:center;background:#2c3e50;color:white;padding:20px;margin-top:30px;}
+
+.sticky-call {
+position:fixed;
+bottom:20px;
+right:20px;
+background:#e74c3c;
+color:white;
+padding:15px 20px;
+border-radius:50px;
+text-decoration:none;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<div class="slider">
+<div class="slide active" style="background-image:url('images/room.jpg')"></div>
+<div class="slide" style="background-image:url('images/temple-day.jpg')"></div>
+<div class="slide" style="background-image:url('images/waterfall2.jpg')"></div>
+</div>
+
+<div class="overlay">
+<h1>SPSS Residency</h1>
+<p>Comfortable Stay near Temple</p>
+</div>
+</header>
+
+<section>
+<h2>Our Rooms</h2>
+<div class="rooms">
+<div class="room">
+<img src="images/room.jpg">
+<div><h3>AC Room</h3><p>₹1500/day</p></div>
+</div>
+
+<div class="room">
+<img src="images/room.jpg">
+<div><h3>Non AC Room</h3><p>₹1000/day</p></div>
+</div>
+</div>
+</section>
+
+<section>
+<h2>Gallery</h2>
+<div class="gallery">
+<img src="images/corridor.jpg">
+<img src="images/temple-night.jpg">
+<img src="images/waterfall1.jpg">
+<img src="images/banner.jpg">
+</div>
+</section>
+
+<section>
+<h2>Nearby Attractions</h2>
+<div class="gallery">
+<img src="images/temple-day.jpg">
+<img src="images/waterfall2.jpg">
+</div>
+</section>
+
+<section>
+<h2>Book Your Stay</h2>
+<form onsubmit="sendWhatsApp(event)">
+<input type="text" id="name" placeholder="Your Name" required>
+<input type="tel" id="phone" placeholder="Phone Number" required>
+<textarea id="message" placeholder="Your Requirement"></textarea>
+<button class="btn" type="submit">Send Enquiry</button>
+</form>
+</section>
+
+<section>
+<h2>Location</h2>
+<p>SPSS Residency, Nagalapuram, Andhra Pradesh</p>
+<iframe src="https://www.google.com/maps?q=SPSS%20Residency%20Nagalapuram&output=embed" width="100%" height="300"></iframe>
+</section>
+
+<div style="text-align:center">
+<a class="btn" href="tel:+919790891558">Call 9790891558</a>
+<a class="btn" href="tel:+919704035830">Call 9704035830</a>
+<a class="btn" href="https://wa.me/919790891558">WhatsApp</a>
+</div>
+
+<a href="tel:+919790891558" class="sticky-call">📞 Call Now</a>
+
+<footer>
+<p>© SPSS Residency</p>
+</footer>
+
+<script>
+let slides=document.querySelectorAll('.slide');
+let index=0;
+setInterval(()=>{
+slides[index].classList.remove('active');
+index=(index+1)%slides.length;
+slides[index].classList.add('active');
+},3000);
+
+function sendWhatsApp(e){
+e.preventDefault();
+let name=document.getElementById('name').value;
+let phone=document.getElementById('phone').value;
+let msg=document.getElementById('message').value;
+let text=`Name: ${name}%0APhone: ${phone}%0AMessage: ${msg}`;
+window.open(`https://wa.me/919790891558?text=${text}`);
+}
+</script>
+
+</body>
+</html>
