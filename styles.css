@@ -36,6 +36,10 @@ img {
   max-width: 100%;
 }
 
+svg {
+  display: block;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -405,6 +409,69 @@ h3 {
   font-weight: 900;
 }
 
+.amenities {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.42fr) minmax(0, 1fr);
+  gap: 22px;
+  align-items: center;
+  padding-top: 34px;
+  padding-bottom: 48px;
+}
+
+.amenities-heading h2 {
+  margin-bottom: 0;
+  font-size: clamp(1.65rem, 3vw, 2.5rem);
+}
+
+.amenity-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.amenity-grid article {
+  display: flex;
+  min-height: 72px;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(20, 32, 30, 0.05);
+}
+
+.amenity-icon {
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+}
+
+.amenity-icon {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  background: rgba(15, 118, 110, 0.1);
+  color: var(--teal-dark);
+}
+
+.amenity-icon svg,
+.floating-whatsapp svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.amenity-grid h3 {
+  margin: 0;
+  font-size: 0.98rem;
+  line-height: 1.2;
+}
+
 .booking {
   display: grid;
   grid-template-columns: minmax(0, 0.8fr) minmax(320px, 1fr);
@@ -611,26 +678,79 @@ select option {
 
 .nearby-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
 }
 
 .nearby-grid article {
-  min-height: 240px;
-  padding: 22px;
+  display: grid;
+  min-height: 0;
+  padding: 18px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
+  box-shadow: 0 12px 30px rgba(20, 32, 30, 0.05);
 }
 
-.nearby-grid span {
+.nearby-card {
+  overflow: hidden;
+}
+
+.nearby-card img {
+  width: 100%;
+  aspect-ratio: 5 / 3;
+  object-fit: cover;
+}
+
+.nearby-body {
+  display: grid;
+  padding: 16px;
+}
+
+.nearby-body .distance {
+  display: inline-flex;
+  width: fit-content;
+  margin-bottom: 10px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(185, 77, 53, 0.1);
   color: var(--coral);
+  font-size: 0.78rem;
   font-weight: 900;
 }
 
+.nearby-grid h3 {
+  min-height: 48px;
+  margin-bottom: 8px;
+  font-size: 1.06rem;
+}
+
 .nearby-grid p {
+  min-height: 72px;
+  margin-bottom: 14px;
   color: var(--muted);
-  line-height: 1.65;
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+
+.directions-link {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  align-self: end;
+  padding: 0 13px;
+  border-radius: 7px;
+  background: rgba(15, 118, 110, 0.1);
+  color: var(--teal-dark);
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.directions-link:hover {
+  background: var(--teal);
+  color: #fff;
 }
 
 .location-panel {
@@ -682,6 +802,35 @@ select option {
   font-weight: 900;
 }
 
+.floating-whatsapp {
+  position: fixed;
+  z-index: 30;
+  right: 22px;
+  bottom: 22px;
+  display: inline-flex;
+  min-height: 54px;
+  align-items: center;
+  gap: 9px;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: #19b65a;
+  color: #fff;
+  font-weight: 900;
+  box-shadow: 0 18px 45px rgba(12, 94, 46, 0.32);
+}
+
+.floating-whatsapp:hover {
+  background: #12984a;
+}
+
+.floating-whatsapp svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.9;
+}
+
 .lightbox {
   width: min(960px, calc(100% - 28px));
   border: 0;
@@ -724,6 +873,7 @@ select option {
   }
 
   .section-grid,
+  .amenities,
   .booking,
   .announcement-grid,
   .announcement-feature,
@@ -736,6 +886,7 @@ select option {
   }
 
   .room-grid,
+  .amenity-grid,
   .nearby-grid {
     grid-template-columns: 1fr;
   }
@@ -755,6 +906,11 @@ select option {
 
   .review-card {
     padding: 42px 28px;
+  }
+
+  .nearby-grid h3,
+  .nearby-grid p {
+    min-height: 0;
   }
 
   .location-panel iframe {
@@ -798,5 +954,16 @@ select option {
   .gallery-item.large {
     grid-column: span 1;
     grid-row: span 1;
+  }
+
+  .amenity-grid article {
+    min-height: 0;
+  }
+
+  .floating-whatsapp {
+    right: 14px;
+    bottom: 14px;
+    min-height: 50px;
+    padding: 0 15px;
   }
 }
