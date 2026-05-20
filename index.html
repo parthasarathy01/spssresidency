@@ -1,146 +1,330 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SPSS Residency - Best Stay in Nagalapuram</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SPSS Residency | Rooms in Nagalapuram</title>
+    <meta
+      name="description"
+      content="Family-friendly AC and Non AC rooms near Sri Vedanarayana Temple in Nagalapuram, Andhra Pradesh. Book SPSS Residency on WhatsApp."
+    />
+    <link rel="preconnect" href="https://www.google.com" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header" data-header>
+      <a class="brand" href="#home" aria-label="SPSS Residency home">
+        <span class="brand-mark">S</span>
+        <span>
+          <strong>SPSS Residency</strong>
+          <small>Nagalapuram</small>
+        </span>
+      </a>
+      <nav class="nav-links" aria-label="Primary navigation">
+        <a href="#announcements">Updates</a>
+        <a href="#rooms">Rooms</a>
+        <a href="#gallery">Gallery</a>
+        <a href="#reviews">Reviews</a>
+        <a href="#nearby">Nearby</a>
+        <a href="#location">Location</a>
+      </nav>
+      <a class="header-cta" href="https://wa.me/919790891558" target="_blank" rel="noreferrer">WhatsApp</a>
+    </header>
 
-<meta name="description" content="Affordable AC & Non-AC rooms near Sri Vedanarayana Swami Temple, Nagalapuram. Book SPSS Residency now.">
+    <main id="home">
+      <section class="hero">
+        <img class="hero-image" src="assets/exterior-night.png" alt="SPSS Residency entrance at night" />
+        <div class="hero-shade"></div>
+        <div class="hero-content">
+          <p class="eyebrow">Family-friendly temple stay in Nagalapuram</p>
+          <h1>SPSS Residency</h1>
+          <p class="hero-copy">
+            Clean, comfortable rooms close to Sri Vedanarayana Temple, Surutapalli, Ramagiri and weekend nature
+            trips around Nagalapuram.
+          </p>
+          <div class="hero-actions">
+            <a class="primary-button" href="#booking">Book on WhatsApp</a>
+            <a class="secondary-button" href="#rooms">View rooms</a>
+          </div>
+          <div class="quick-facts" aria-label="Hotel highlights">
+            <span>Now 11 rooms</span>
+            <span>AC rooms from Rs. 1,500</span>
+            <span>Non AC rooms from Rs. 1,000</span>
+            <span>Temple visits made easy</span>
+          </div>
+        </div>
+      </section>
 
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+      <section class="intro section-grid">
+        <div>
+          <p class="section-kicker">Stay close, rest well</p>
+          <h2>A practical base for families, pilgrims and weekend travellers.</h2>
+        </div>
+        <p>
+          SPSS Residency keeps the stay simple: clean rooms, easy access to Nagalapuram town, quick WhatsApp booking,
+          and helpful guidance for nearby temples and waterfalls. We recently expanded from 6 first-floor rooms to 11
+          total rooms with 5 newly renovated ground-floor rooms.
+        </p>
+      </section>
 
-<style>
-body {font-family:'Poppins',sans-serif;margin:0;background:#f4f6f8;}
+      <section id="announcements" class="announcements section-pad">
+        <div class="section-heading">
+          <p class="section-kicker">Latest updates</p>
+          <h2>Announcements, temple events and seasonal travel notes.</h2>
+        </div>
+        <div class="announcement-grid">
+          <article class="announcement-feature">
+            <button type="button" class="announcement-image" data-src="assets/announcement-11-rooms.jpeg">
+              <img src="assets/announcement-11-rooms.jpeg" alt="SPSS Residency expanded to 11 rooms announcement" />
+            </button>
+            <div class="announcement-copy">
+              <p class="room-tag">New rooms opened</p>
+              <h3>SPSS Residency is now expanded to 11 rooms.</h3>
+              <p>
+                We renovated 5 additional ground-floor rooms and now welcome guests with 11 AC and Non AC rooms for
+                family stays, temple visits and weekend trips.
+              </p>
+              <a class="text-link" href="#booking">Book your stay</a>
+            </div>
+          </article>
+          <article class="announcement-placeholder">
+            <span>Image slot</span>
+            <h3>Special pooja update</h3>
+            <p>Add a pooja poster, temple festival timing, or important darshan note here.</p>
+          </article>
+          <article class="announcement-placeholder">
+            <span>Image slot</span>
+            <h3>Falls season update</h3>
+            <p>Add waterfall timing, travel advisory, monsoon photos, or seasonal guest tips here.</p>
+          </article>
+        </div>
+      </section>
 
-.slider {height:60vh;position:relative;}
-.slide {position:absolute;width:100%;height:100%;background-size:cover;background-position:center;opacity:0;transition:1s;}
-.slide.active {opacity:1;}
-.overlay {position:absolute;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;justify-content:center;align-items:center;color:white;flex-direction:column;}
+      <section id="rooms" class="rooms section-pad">
+        <div class="section-heading">
+          <p class="section-kicker">Rooms</p>
+          <h2>Choose the comfort level that fits your trip.</h2>
+        </div>
+        <div class="room-grid">
+          <article class="room-card">
+            <img src="assets/room-yellow-ac.jpeg" alt="AC room at SPSS Residency" />
+            <div class="room-body">
+              <p class="room-tag">Air conditioned</p>
+              <h3>AC Room</h3>
+              <p>Comfortable double-bed room with air conditioning, clean bedding and essentials for a relaxed stay.</p>
+              <div class="price-row">
+                <strong>Rs. 1,500</strong>
+                <span>per night</span>
+              </div>
+              <a class="text-link" href="#booking" data-room-link="AC Room">Book AC room</a>
+            </div>
+          </article>
+          <article class="room-card">
+            <img src="assets/room-yellow-window.jpeg" alt="Non AC room at SPSS Residency" />
+            <div class="room-body">
+              <p class="room-tag">Value stay</p>
+              <h3>Non AC Room</h3>
+              <p>Neat and affordable double-bed room for short temple visits, family trips and overnight stays.</p>
+              <div class="price-row">
+                <strong>Rs. 1,000</strong>
+                <span>per night</span>
+              </div>
+              <a class="text-link" href="#booking" data-room-link="Non AC Room">Book Non AC room</a>
+            </div>
+          </article>
+        </div>
+      </section>
 
-section {padding:40px 20px;max-width:1100px;margin:auto;}
-h2{text-align:center;}
+      <section id="booking" class="booking section-pad">
+        <div class="booking-copy">
+          <p class="section-kicker">Booking</p>
+          <h2>Send your room request directly on WhatsApp.</h2>
+          <p>
+            Fill in the details and we will prepare a WhatsApp message for SPSS Residency. You can review it before
+            sending.
+          </p>
+        </div>
+        <form class="booking-form" data-booking-form>
+          <label>
+            Name
+            <input name="name" type="text" placeholder="Your name" required />
+          </label>
+          <label>
+            Mobile number
+            <input name="phone" type="tel" placeholder="Your phone number" required />
+          </label>
+          <div class="form-row">
+            <label>
+              Room type
+              <select name="room">
+                <option>AC Room</option>
+                <option>Non AC Room</option>
+              </select>
+            </label>
+            <label>
+              Guests
+              <input name="guests" type="number" min="1" max="8" value="2" />
+            </label>
+          </div>
+          <div class="form-row">
+            <label>
+              Check-in
+              <input name="checkin" type="date" required />
+            </label>
+            <label>
+              Nights
+              <input name="nights" type="number" min="1" max="30" value="1" />
+            </label>
+          </div>
+          <label>
+            Notes
+            <textarea name="notes" rows="3" placeholder="Arrival time, family details, or other requests"></textarea>
+          </label>
+          <button class="primary-button form-submit" type="submit">Send WhatsApp inquiry</button>
+          <p class="form-note">Booking number: +91 97908 91558</p>
+        </form>
+      </section>
 
-.rooms,.gallery {display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;}
-.room{background:white;border-radius:10px;overflow:hidden;box-shadow:0 5px 15px rgba(0,0,0,0.1);}
-.room img{width:100%;height:180px;object-fit:cover;}
-.room div{padding:15px;}
+      <section id="gallery" class="gallery section-pad">
+        <div class="section-heading">
+          <p class="section-kicker">Gallery</p>
+          <h2>See the stay before you arrive.</h2>
+        </div>
+        <div class="gallery-grid" data-gallery>
+          <button type="button" class="gallery-item large" data-src="assets/exterior-night.png">
+            <img src="assets/exterior-night.png" alt="SPSS Residency exterior" />
+          </button>
+          <button type="button" class="gallery-item" data-src="assets/room-purple-wide.jpeg">
+            <img src="assets/room-purple-wide.jpeg" alt="Purple room wide view" />
+          </button>
+          <button type="button" class="gallery-item" data-src="assets/room-purple-close.jpeg">
+            <img src="assets/room-purple-close.jpeg" alt="Purple room bed view" />
+          </button>
+          <button type="button" class="gallery-item" data-src="assets/room-yellow-window.jpeg">
+            <img src="assets/room-yellow-window.jpeg" alt="Yellow room with window" />
+          </button>
+          <button type="button" class="gallery-item" data-src="assets/room-yellow-ac.jpeg">
+            <img src="assets/room-yellow-ac.jpeg" alt="Yellow AC room" />
+          </button>
+          <button type="button" class="gallery-item" data-src="assets/corridor.jpeg">
+            <img src="assets/corridor.jpeg" alt="SPSS Residency corridor" />
+          </button>
+        </div>
+      </section>
 
-.gallery img{width:100%;height:200px;object-fit:cover;border-radius:10px;}
+      <section id="reviews" class="reviews section-pad">
+        <div class="section-heading">
+          <p class="section-kicker">Guest reviews</p>
+          <h2>Travellers appreciate the location, cleanliness and easy temple access.</h2>
+        </div>
+        <div class="review-stage" data-review-stage>
+          <article class="review-card is-active" data-review-card>
+            <div class="stars" aria-label="Five star review">★★★★★</div>
+            <p>
+              Visitors highlight the stay as clean, neat and convenient for families visiting Sri Vedanarayana Temple.
+            </p>
+            <footer>
+              <strong>Temple traveller</strong>
+              <span>Public review highlight</span>
+            </footer>
+          </article>
+          <article class="review-card" data-review-card>
+            <div class="stars" aria-label="Five star review">★★★★★</div>
+            <p>
+              Guests mention comfortable rooms, fresh bedding and a practical location close to Nagalapuram town.
+            </p>
+            <footer>
+              <strong>Family guest</strong>
+              <span>Public review highlight</span>
+            </footer>
+          </article>
+          <article class="review-card" data-review-card>
+            <div class="stars" aria-label="Five star review">★★★★★</div>
+            <p>
+              Travellers like the simple booking flow, helpful contact numbers and access to nearby temples and waterfalls.
+            </p>
+            <footer>
+              <strong>Weekend visitor</strong>
+              <span>Public review highlight</span>
+            </footer>
+          </article>
+        </div>
+        <div class="review-controls" aria-label="Review carousel controls">
+          <button type="button" class="is-active" data-review-dot aria-label="Show review 1"></button>
+          <button type="button" data-review-dot aria-label="Show review 2"></button>
+          <button type="button" data-review-dot aria-label="Show review 3"></button>
+        </div>
+      </section>
 
-.btn{padding:12px 20px;margin:10px;background:#27ae60;color:white;text-decoration:none;border-radius:25px;display:inline-block;}
+      <section id="nearby" class="nearby section-pad">
+        <div class="section-heading">
+          <p class="section-kicker">Nearby visits</p>
+          <h2>Temple trips and nature stops around Nagalapuram.</h2>
+        </div>
+        <div class="nearby-grid">
+          <article>
+            <span>300 m</span>
+            <h3>Sri Vedanarayana Temple</h3>
+            <p>A historic temple associated with Sri Krishna Devaraya, very close to the hotel.</p>
+          </article>
+          <article>
+            <span>3 km</span>
+            <h3>Ramagiri Temple</h3>
+            <p>Known for Kalabhairava, Sri Valeeswarar and the Nandi water flow.</p>
+          </article>
+          <article>
+            <span>8 km</span>
+            <h3>Surutapalli Temple</h3>
+            <p>Visit Sri Pallikondeswara Swamy Temple on a short drive from Nagalapuram.</p>
+          </article>
+          <article>
+            <span>10-20 km</span>
+            <h3>Waterfalls</h3>
+            <p>Nagalapuram waterfalls and Kailasakona waterfalls are popular nature outings nearby.</p>
+          </article>
+        </div>
+      </section>
 
-form{display:grid;gap:10px;max-width:500px;margin:auto;}
-input,textarea{padding:10px;border-radius:5px;border:1px solid #ccc;}
+      <section id="location" class="location section-pad">
+        <div class="location-panel">
+          <div>
+            <p class="section-kicker">Location</p>
+            <h2>SPSS Residency, Nagalapuram</h2>
+            <p>SPSS Residency, Nagalapuram, Andhra Pradesh, India</p>
+            <div class="contact-lines">
+              <a href="tel:+919790891558">+91 97908 91558</a>
+              <a href="tel:+919704036380">+91 97040 36380</a>
+            </div>
+            <a
+              class="secondary-button dark"
+              href="https://www.google.com/maps/search/?api=1&query=SPSS%20Residency%2C%20Nagalapuram"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open in Google Maps
+            </a>
+          </div>
+          <iframe
+            title="Google map showing SPSS Residency in Nagalapuram"
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            src="https://www.google.com/maps?q=SPSS%20Residency%2C%20Nagalapuram&output=embed"
+          ></iframe>
+        </div>
+      </section>
+    </main>
 
-footer{text-align:center;background:#2c3e50;color:white;padding:20px;margin-top:30px;}
+    <footer class="site-footer">
+      <strong>SPSS Residency</strong>
+      <span>Family-friendly rooms near temples in Nagalapuram.</span>
+      <a href="https://wa.me/919790891558" target="_blank" rel="noreferrer">WhatsApp booking</a>
+    </footer>
 
-.sticky-call {
-position:fixed;
-bottom:20px;
-right:20px;
-background:#e74c3c;
-color:white;
-padding:15px 20px;
-border-radius:50px;
-text-decoration:none;
-}
-</style>
-</head>
+    <dialog class="lightbox" data-lightbox>
+      <button type="button" class="lightbox-close" data-lightbox-close aria-label="Close gallery image">x</button>
+      <img src="" alt="Selected SPSS Residency gallery image" data-lightbox-image />
+    </dialog>
 
-<body>
-
-<header>
-<div class="slider">
-<div class="slide active" style="background-image:url('images/room.jpg')"></div>
-<div class="slide" style="background-image:url('images/temple-day.jpg')"></div>
-<div class="slide" style="background-image:url('images/waterfall2.jpg')"></div>
-</div>
-
-<div class="overlay">
-<h1>SPSS Residency</h1>
-<p>Comfortable Stay near Temple</p>
-</div>
-</header>
-
-<section>
-<h2>Our Rooms</h2>
-<div class="rooms">
-<div class="room">
-<img src="images/room.jpg">
-<div><h3>AC Room</h3><p>₹1500/day</p></div>
-</div>
-
-<div class="room">
-<img src="images/room.jpg">
-<div><h3>Non AC Room</h3><p>₹1000/day</p></div>
-</div>
-</div>
-</section>
-
-<section>
-<h2>Gallery</h2>
-<div class="gallery">
-<img src="images/corridor.jpg">
-<img src="images/temple-night.jpg">
-<img src="images/waterfall1.jpg">
-<img src="images/banner.jpg">
-</div>
-</section>
-
-<section>
-<h2>Nearby Attractions</h2>
-<div class="gallery">
-<img src="images/temple-day.jpg">
-<img src="images/waterfall2.jpg">
-</div>
-</section>
-
-<section>
-<h2>Book Your Stay</h2>
-<form onsubmit="sendWhatsApp(event)">
-<input type="text" id="name" placeholder="Your Name" required>
-<input type="tel" id="phone" placeholder="Phone Number" required>
-<textarea id="message" placeholder="Your Requirement"></textarea>
-<button class="btn" type="submit">Send Enquiry</button>
-</form>
-</section>
-
-<section>
-<h2>Location</h2>
-<p>SPSS Residency, Nagalapuram, Andhra Pradesh</p>
-<iframe src="https://www.google.com/maps?q=SPSS%20Residency%20Nagalapuram&output=embed" width="100%" height="300"></iframe>
-</section>
-
-<div style="text-align:center">
-<a class="btn" href="tel:+919790891558">Call 9790891558</a>
-<a class="btn" href="tel:+919704035830">Call 9704035830</a>
-<a class="btn" href="https://wa.me/919790891558">WhatsApp</a>
-</div>
-
-<a href="tel:+919790891558" class="sticky-call">📞 Call Now</a>
-
-<footer>
-<p>© SPSS Residency</p>
-</footer>
-
-<script>
-let slides=document.querySelectorAll('.slide');
-let index=0;
-setInterval(()=>{
-slides[index].classList.remove('active');
-index=(index+1)%slides.length;
-slides[index].classList.add('active');
-},3000);
-
-function sendWhatsApp(e){
-e.preventDefault();
-let name=document.getElementById('name').value;
-let phone=document.getElementById('phone').value;
-let msg=document.getElementById('message').value;
-let text=`Name: ${name}%0APhone: ${phone}%0AMessage: ${msg}`;
-window.open(`https://wa.me/919790891558?text=${text}`);
-}
-</script>
-
-</body>
+    <script src="script.js"></script>
+  </body>
 </html>
