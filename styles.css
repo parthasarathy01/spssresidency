@@ -291,7 +291,7 @@ h3 {
 }
 
 .announcement-grid {
-  display: grid;
+  display: block;
   grid-template-columns: minmax(0, 1.35fr) minmax(240px, 0.65fr);
   gap: 18px;
 }
