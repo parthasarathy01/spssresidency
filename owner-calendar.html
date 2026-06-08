@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SPSS Residency | Owner Room Calendar</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="stylesheet" href="owner-calendar.css" />
+  </head>
+  <body>
+    <header class="owner-header">
+      <div>
+        <p class="kicker">SPSS Residency</p>
+        <h1>Room Booking Calendar</h1>
+        <p class="header-copy">Select a date, then block or edit any of the 11 rooms.</p>
+        <p class="sync-status" data-sync-status>Using browser storage. Add Google Apps Script URL to sync across devices.</p>
+      </div>
+      <div class="header-actions">
+        <button type="button" class="ghost-button" data-export>Export backup</button>
+        <label class="ghost-button file-button">
+          Import backup
+          <input type="file" accept="application/json" data-import />
+        </label>
+      </div>
+    </header>
+
+    <main class="owner-shell">
+      <section class="calendar-panel">
+        <div class="toolbar">
+          <button type="button" class="icon-button" data-prev-year aria-label="Previous year">
+            <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></svg>
+          </button>
+          <div class="year-title">
+            <span>Year</span>
+            <strong data-year-label>2026</strong>
+          </div>
+          <button type="button" class="icon-button" data-next-year aria-label="Next year">
+            <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></svg>
+          </button>
+        </div>
+
+        <div class="stats-row" aria-label="Year booking summary">
+          <div>
+            <span data-total-bookings>0</span>
+            <small>Total room nights</small>
+          </div>
+          <div>
+            <span data-full-days>0</span>
+            <small>Fully booked dates</small>
+          </div>
+          <div>
+            <span data-selected-summary>0/11</span>
+            <small>Selected date</small>
+          </div>
+        </div>
+
+        <div class="legend">
+          <span><i class="available-dot"></i>Available</span>
+          <span><i class="partial-dot"></i>Partly booked</span>
+          <span><i class="full-dot"></i>Full</span>
+        </div>
+
+        <div class="months-grid" data-calendar></div>
+      </section>
+
+      <aside class="rooms-panel">
+        <div class="rooms-heading">
+          <div>
+            <p class="kicker">Selected date</p>
+            <h2 data-selected-date>Choose a date</h2>
+          </div>
+          <button type="button" class="ghost-button compact" data-copy-summary>Copy summary</button>
+        </div>
+        <div class="rooms-summary">
+          <span data-booked-count>0 booked</span>
+          <span data-available-count>11 available</span>
+        </div>
+        <div class="rooms-grid" data-rooms></div>
+        <p class="save-note">Saved automatically in this browser.</p>
+      </aside>
+    </main>
+
+    <dialog class="booking-dialog" data-dialog>
+      <form method="dialog" class="booking-card" data-booking-form>
+        <div class="dialog-head">
+          <div>
+            <p class="kicker" data-dialog-date>Date</p>
+            <h3 data-dialog-room>Room</h3>
+          </div>
+          <button type="button" class="icon-button dark" data-close-dialog aria-label="Close">
+            <svg viewBox="0 0 24 24"><path d="M6 6l12 12" /><path d="M18 6 6 18" /></svg>
+          </button>
+        </div>
+
+        <label>
+          Customer name
+          <input name="name" type="text" placeholder="Guest name or Blocked" required />
+        </label>
+        <label>
+          Mobile number
+          <input name="phone" type="tel" placeholder="Guest mobile number" />
+        </label>
+        <label>
+          Notes
+          <textarea name="notes" rows="3" placeholder="Advance, check-in time, source, extra details"></textarea>
+        </label>
+
+        <div class="dialog-actions">
+          <button type="button" class="danger-button" data-delete-booking>Clear room</button>
+          <button type="submit" class="primary-button">Save booking</button>
+        </div>
+      </form>
+    </dialog>
+
+    <iframe class="sync-frame" name="sheetSyncFrame" title="Google Sheets sync"></iframe>
+    <script src="owner-calendar.js"></script>
+  </body>
+</html>
