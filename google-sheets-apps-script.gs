@@ -1,73 +1,86 @@
 const SHEET_NAME = "Bookings";
+// Optional: paste your Google Sheet ID here if this script is not bound to the Sheet.
+// Sheet ID is the long value in the URL between /d/ and /edit.
+const SPREADSHEET_ID = "";
 
 function doGet(e) {
   const action = e.parameter.action || "list";
   const callback = e.parameter.callback || "callback";
 
-  if (action !== "list") {
-    return jsonp(callback, { ok: false, error: "Unknown action" });
+  try {
+    if (action !== "list") {
+      return jsonp(callback, { ok: false, error: "Unknown action" });
+    }
+
+    const sheet = getSheet();
+    const values = sheet.getDataRange().getValues();
+    const rows = values.slice(1).filter((row) => row[0] && row[1]);
+    const bookings = {};
+
+    rows.forEach((row) => {
+      const date = String(row[0]);
+      const roomId = String(row[1]);
+      if (!bookings[date]) bookings[date] = {};
+      bookings[date][roomId] = {
+        name: String(row[2] || ""),
+        phone: String(row[3] || ""),
+        notes: String(row[4] || ""),
+        updatedAt: String(row[5] || ""),
+      };
+    });
+
+    return jsonp(callback, { ok: true, bookings });
+  } catch (error) {
+    return jsonp(callback, { ok: false, error: String(error && error.message ? error.message : error) });
   }
-
-  const sheet = getSheet();
-  const values = sheet.getDataRange().getValues();
-  const rows = values.slice(1).filter((row) => row[0] && row[1]);
-  const bookings = {};
-
-  rows.forEach((row) => {
-    const date = String(row[0]);
-    const roomId = String(row[1]);
-    if (!bookings[date]) bookings[date] = {};
-    bookings[date][roomId] = {
-      name: String(row[2] || ""),
-      phone: String(row[3] || ""),
-      notes: String(row[4] || ""),
-      updatedAt: String(row[5] || ""),
-    };
-  });
-
-  return jsonp(callback, { ok: true, bookings });
 }
 
 function doPost(e) {
-  const action = e.parameter.action;
-  const date = e.parameter.date;
-  const roomId = e.parameter.roomId;
+  try {
+    const action = e.parameter.action;
+    const date = e.parameter.date;
+    const roomId = e.parameter.roomId;
 
-  if (!date || !roomId) {
-    return text({ ok: false, error: "Missing date or roomId" });
-  }
-
-  const sheet = getSheet();
-  const rowIndex = findBookingRow(sheet, date, roomId);
-
-  if (action === "delete") {
-    if (rowIndex > -1) sheet.deleteRow(rowIndex);
-    return text({ ok: true });
-  }
-
-  if (action === "save") {
-    const row = [
-      date,
-      roomId,
-      e.parameter.name || "",
-      e.parameter.phone || "",
-      e.parameter.notes || "",
-      new Date().toISOString(),
-    ];
-
-    if (rowIndex > -1) {
-      sheet.getRange(rowIndex, 1, 1, row.length).setValues([row]);
-    } else {
-      sheet.appendRow(row);
+    if (!date || !roomId) {
+      return text({ ok: false, error: "Missing date or roomId" });
     }
-    return text({ ok: true });
-  }
 
-  return text({ ok: false, error: "Unknown action" });
+    const sheet = getSheet();
+    const rowIndex = findBookingRow(sheet, date, roomId);
+
+    if (action === "delete") {
+      if (rowIndex > -1) sheet.deleteRow(rowIndex);
+      return text({ ok: true });
+    }
+
+    if (action === "save") {
+      const row = [
+        date,
+        roomId,
+        e.parameter.name || "",
+        e.parameter.phone || "",
+        e.parameter.notes || "",
+        new Date().toISOString(),
+      ];
+
+      if (rowIndex > -1) {
+        sheet.getRange(rowIndex, 1, 1, row.length).setValues([row]);
+      } else {
+        sheet.appendRow(row);
+      }
+      return text({ ok: true });
+    }
+
+    return text({ ok: false, error: "Unknown action" });
+  } catch (error) {
+    return text({ ok: false, error: String(error && error.message ? error.message : error) });
+  }
 }
 
 function getSheet() {
-  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const spreadsheet = SPREADSHEET_ID
+    ? SpreadsheetApp.openById(SPREADSHEET_ID)
+    : SpreadsheetApp.getActiveSpreadsheet();
   let sheet = spreadsheet.getSheetByName(SHEET_NAME);
   if (!sheet) sheet = spreadsheet.insertSheet(SHEET_NAME);
 

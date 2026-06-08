@@ -34,3 +34,42 @@ WhatsApp booking is configured in `script.js`:
 ```js
 const whatsappNumber = "919790891558";
 ```
+
+## Owner Room Calendar
+
+The internal booking page is `owner-calendar.html`. It lets you select a year/date and mark any of the 11 rooms as
+booked with customer name, mobile number, and notes.
+
+Important: this first version stores data in the current browser using `localStorage`. It is useful on one shared
+computer/browser. For live shared use across different phones or computers, connect this page to a shared database such
+as Firebase, Supabase, or Google Sheets.
+
+### Google Sheets Sync
+
+Use `google-sheets-apps-script.gs` to create a free Google Sheets backend:
+
+1. Create a new Google Sheet named `SPSS Room Bookings`.
+2. In the sheet, open `Extensions > Apps Script`.
+3. Paste the full contents of `google-sheets-apps-script.gs`.
+4. Optional but recommended: copy the Sheet ID from your Google Sheet URL and paste it into `SPREADSHEET_ID` in the Apps Script.
+4. Click `Deploy > New deployment`.
+5. Choose type `Web app`.
+6. Set `Execute as` to `Me`.
+7. Set `Who has access` to `Anyone`.
+8. Deploy and copy the Web App URL.
+9. In `owner-calendar.js`, paste that URL into:
+
+```js
+const googleSheetWebAppUrl = "";
+```
+
+After that, upload `owner-calendar.js` again. The owner calendar will load and save bookings through Google Sheets.
+
+If sync fails, open this URL in a browser after replacing `YOUR_WEB_APP_URL`:
+
+```text
+YOUR_WEB_APP_URL?action=list&callback=test
+```
+
+It should show text like `test({"ok":true,"bookings":{}});`. If it shows a Google sign-in page, the Web App access is
+not set to `Anyone`. If it shows an authorization or spreadsheet error, redeploy after authorizing the Apps Script.

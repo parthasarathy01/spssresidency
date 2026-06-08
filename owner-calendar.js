@@ -81,13 +81,19 @@ function loadFromGoogleSheet() {
   const callbackName = `spssSheetCallback_${Date.now()}`;
   const script = document.createElement("script");
   const separator = googleSheetWebAppUrl.includes("?") ? "&" : "?";
+  const timeout = window.setTimeout(() => {
+    delete window[callbackName];
+    script.remove();
+    setSyncStatus("Google Sheets did not respond. Check Apps Script deployment access.", "error");
+  }, 12000);
 
   window[callbackName] = (payload) => {
+    window.clearTimeout(timeout);
     delete window[callbackName];
     script.remove();
 
     if (!payload?.ok) {
-      setSyncStatus("Could not load Google Sheet bookings.", "error");
+      setSyncStatus(`Google Sheets error: ${payload?.error || "Unknown error"}`, "error");
       return;
     }
 
@@ -99,9 +105,10 @@ function loadFromGoogleSheet() {
   };
 
   script.onerror = () => {
+    window.clearTimeout(timeout);
     delete window[callbackName];
     script.remove();
-    setSyncStatus("Google Sheets sync failed. Using browser backup.", "error");
+    setSyncStatus("Google Sheets sync failed. Check Web App access is set to Anyone.", "error");
   };
 
   script.src = `${googleSheetWebAppUrl}${separator}action=list&callback=${callbackName}&cache=${Date.now()}`;
