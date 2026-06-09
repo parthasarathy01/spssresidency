@@ -14,7 +14,7 @@ const dialogRoom = document.querySelector("[data-dialog-room]");
 const syncStatus = document.querySelector("[data-sync-status]");
 
 const storageKey = "spss-room-calendar-v1";
-const googleSheetWebAppUrl = "https://script.google.com/macros/s/AKfycbw_H6QpIsxAck89usrq5QMdO6tmHULbcxAqDCCd_L0YuaFOIzXvkd0b2ef5jTL5y7XAbg/exec";
+const googleSheetWebAppUrl = "https://script.google.com/macros/s/AKfycbw9XLJPIQ9w__Lkji2iuk_lB5GVLpPubi24yjWVibvCZ9bu60PirzzB6Q9ogmEdZWCaiQ/exec";
 const monthNames = [
   "January",
   "February",
