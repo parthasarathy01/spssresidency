@@ -31,17 +31,19 @@ const monthNames = [
 ];
 const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const rooms = [
-  { id: "G1", label: "Ground Floor 1", short: "G1" },
-  { id: "G2", label: "Ground Floor 2", short: "G2" },
-  { id: "G3", label: "Ground Floor 3", short: "G3" },
-  { id: "G4", label: "Ground Floor 4", short: "G4" },
-  { id: "G5", label: "Ground Floor 5", short: "G5" },
-  { id: "F1", label: "First Floor 1", short: "F1" },
-  { id: "F2", label: "First Floor 2", short: "F2" },
-  { id: "F3", label: "First Floor 3", short: "F3" },
-  { id: "F4", label: "First Floor 4", short: "F4" },
-  { id: "F5", label: "First Floor 5", short: "F5" },
-  { id: "F6", label: "First Floor 6", short: "F6" },
+  { id: "G1", label: "Ground Floor 101", short: "101", type: "NON-AC" },
+  { id: "G2", label: "Ground Floor 102", short: "102", type: "NON-AC" },
+  { id: "G3", label: "Ground Floor 103", short: "103", type: "AC" },
+  { id: "G4", label: "Ground Floor 104", short: "104", type: "AC" },
+  { id: "G5", label: "Ground Floor 105", short: "105", type: "AC" },
+
+  { id: "F1", label: "First Floor 106", short: "106", type: "AC" },
+
+  { id: "F2", label: "First Floor 107", short: "107", type: "AC" },
+  { id: "F3", label: "First Floor 108", short: "108", type: "AC" },
+  { id: "F4", label: "First Floor 109", short: "109", type: "AC" },
+  { id: "F5", label: "First Floor 110", short: "110", type: "AC" },
+  { id: "F6", label: "First Floor 111", short: "111", type: "NON-AC" },
 ];
 
 let bookings = loadBookings();
@@ -249,7 +251,13 @@ function renderRooms() {
       <span class="room-number">${room.short}</span>
       <span class="room-text">
         <strong>${room.label}</strong>
-        <span>${booking ? `${booking.name}${booking.phone ? ` - ${booking.phone}` : ""}` : "Available"}</span>
+         
+        // <span>${booking ? `${booking.name}${booking.phone ? ` - ${booking.phone}` : ""}` : "Available"}</span>
+        <span>
+      ${booking
+        ? `${booking.roomType || "AC"} • ${booking.name}`
+        : "Available"}
+      </span>
       </span>
       <span class="room-status">${booking ? "Booked" : "Free"}</span>
     `;
@@ -281,6 +289,11 @@ function openBookingDialog(roomId) {
   bookingForm.elements.name.value = booking?.name || "";
   bookingForm.elements.phone.value = booking?.phone || "";
   bookingForm.elements.notes.value = booking?.notes || "";
+  const roomType = booking?.roomType || "AC";
+
+  document.querySelector(
+    `input[name="roomType"][value="${roomType}"]`
+  ).checked = true;
   dialog.showModal();
   bookingForm.elements.name.focus();
 }
@@ -290,12 +303,14 @@ function saveRoomBooking() {
   const name = String(form.get("name") || "").trim();
   const phone = String(form.get("phone") || "").trim();
   const notes = String(form.get("notes") || "").trim();
+  const roomType = String(form.get("roomType") || "AC");
   if (!name || !activeRoomId) return;
 
   if (!bookings[selectedDate]) bookings[selectedDate] = {};
   bookings[selectedDate][activeRoomId] = {
     name,
     phone,
+    roomType,
     notes,
     updatedAt: new Date().toISOString(),
   };
@@ -307,6 +322,7 @@ function saveRoomBooking() {
     roomId: activeRoomId,
     name,
     phone,
+    roomType,
     notes,
   });
   dialog.close();

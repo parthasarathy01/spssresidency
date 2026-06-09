@@ -11,7 +11,13 @@
   --green: #138a52;
   --shadow: 0 20px 60px rgba(22, 33, 31, 0.12);
 }
-
+    .room-type{
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    color:#777;
+    margin-top:2px;
+}
 * {
   box-sizing: border-box;
 }
