@@ -251,8 +251,6 @@ function renderRooms() {
       <span class="room-number">${room.short}</span>
       <span class="room-text">
         <strong>${room.label}</strong>
-         
-        // <span>${booking ? `${booking.name}${booking.phone ? ` - ${booking.phone}` : ""}` : "Available"}</span>
         <span>
       ${booking
         ? `${booking.roomType || "AC"} • ${booking.name}`

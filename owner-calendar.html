@@ -102,17 +102,13 @@
         </label>
         <label>Room Type</label>
 
-          <div class="room-type-group">
-            <label>
-              <input type="radio" name="roomType" value="AC" checked>
-              AC
-            </label>
+          <div class="room-type-toggle">
+    <input type="radio" id="ac" name="roomType" value="AC" checked hidden>
+    <label for="ac">❄️ AC</label>
 
-            <label>
-              <input type="radio" name="roomType" value="NON-AC">
-              Non-AC
-            </label>
-          </div>
+    <input type="radio" id="nonac" name="roomType" value="NON-AC" hidden>
+    <label for="nonac">🪟 Non-AC</label>
+</div>
         <label>
           Notes
           <textarea name="notes" rows="3" placeholder="Advance, check-in time, source, extra details"></textarea>
