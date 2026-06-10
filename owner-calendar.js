@@ -301,7 +301,7 @@ function saveRoomBooking() {
   const name = String(form.get("name") || "").trim();
   const phone = String(form.get("phone") || "").trim();
   const notes = String(form.get("notes") || "").trim();
-  const roomType = String(form.get("roomType") || "").trim();
+  const roomType = document.querySelector('input[name="roomType"]:checked')?.value || "";;
   if (!name || !activeRoomId) return;
 
   if (!bookings[selectedDate]) bookings[selectedDate] = {};
