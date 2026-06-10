@@ -14,7 +14,7 @@ const dialogRoom = document.querySelector("[data-dialog-room]");
 const syncStatus = document.querySelector("[data-sync-status]");
 
 const storageKey = "spss-room-calendar-v1";
-const googleSheetWebAppUrl = "https://script.google.com/macros/s/AKfycbw9XLJPIQ9w__Lkji2iuk_lB5GVLpPubi24yjWVibvCZ9bu60PirzzB6Q9ogmEdZWCaiQ/exec";
+const googleSheetWebAppUrl = "https://script.google.com/macros/s/AKfycbzwS-qv2yxi4pjhbviVDGQNpl2_RdVj30V3dUz5c9ms--pPymWZBxXgcm09-ce7yAnppA/exec";
 const monthNames = [
   "January",
   "February",
@@ -301,7 +301,7 @@ function saveRoomBooking() {
   const name = String(form.get("name") || "").trim();
   const phone = String(form.get("phone") || "").trim();
   const notes = String(form.get("notes") || "").trim();
-  const roomType = String(form.get("roomType") || "AC");
+  const roomType = String(form.get("roomType") || "").trim();
   if (!name || !activeRoomId) return;
 
   if (!bookings[selectedDate]) bookings[selectedDate] = {};
