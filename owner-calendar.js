@@ -306,7 +306,19 @@ function openBookingDialog(roomId) {
   bookingForm.elements.name.value = booking?.name || "";
   bookingForm.elements.phone.value = booking?.phone || "";
   bookingForm.elements.notes.value = booking?.notes || "";
+
   const roomType = booking?.roomType || "AC";
+  bookingForm.elements.totalAmount.value =
+  booking?.totalAmount || "";
+
+bookingForm.elements.advancePaid.value =
+  booking?.advancePaid || "";
+
+bookingForm.elements.balanceAmount.value =
+  booking?.balanceAmount || "";
+
+bookingForm.elements.paymentMode.value =
+  booking?.paymentMode || "UPI";
 
   document.querySelector(
     `input[name="roomType"][value="${roomType}"]`
@@ -388,7 +400,13 @@ function copySelectedSummary() {
   const lines = [`SPSS Residency bookings for ${formatDisplayDate(selectedDate)}`];
   rooms.forEach((room) => {
     const booking = dateBookings[room.id];
-    lines.push(`${room.short}: ${booking ? `${booking.name}${booking.phone ? ` (${booking.phone})` : ""}` : "Available"}`);
+    lines.push(`${room.short}: ${booking
+  ? `${booking.roomType || "AC"} • ${booking.name}`
+  : "Available"}
+
+${booking?.advancePaid
+  ? `<small>₹${booking.advancePaid} / ₹${booking.totalAmount}</small>`
+  : ""}`);
   });
   navigator.clipboard?.writeText(lines.join("\n"));
 }
