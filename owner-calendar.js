@@ -271,9 +271,20 @@ function renderRooms() {
       <span class="room-text">
         <strong>${room.label}</strong>
         <span>
-      ${booking
-        ? `${booking.roomType || "AC"} • ${booking.name}`
-        : "Available"}
+      <span>
+                ${
+          booking
+            ? `
+              ${booking.roomType || "AC"} • ${booking.name}
+              <br>
+              <small>
+                Adv ₹${booking.advancePaid || 0}
+                | Due ₹${booking.balanceAmount || 0}
+              </small>
+            `
+            : "Available"
+        }
+        </span>
       </span>
       </span>
       <span class="room-status">${booking ? "Booked" : "Free"}</span>
@@ -319,6 +330,8 @@ bookingForm.elements.balanceAmount.value =
 
 bookingForm.elements.paymentMode.value =
   booking?.paymentMode || "UPI";
+
+  updateBalance();
 
   document.querySelector(
     `input[name="roomType"][value="${roomType}"]`
