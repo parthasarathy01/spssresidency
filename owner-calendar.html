@@ -109,6 +109,21 @@
     <input type="radio" id="nonac" name="roomType" value="NON-AC" hidden>
     <label for="nonac">🪟 Non-AC</label>
 </div>
+      <label>Total Amount (₹)</label>
+      <input type="number" name="totalAmount" min="0">
+
+      <label>Advance Paid (₹)</label>
+      <input type="number" name="advancePaid" min="0">
+
+      <label>Balance Amount (₹)</label>
+      <input type="number" name="balanceAmount" readonly>
+
+      <label>Payment Mode</label>
+      <select name="paymentMode">
+        <option value="UPI">UPI</option>
+        <option value="Cash">Cash</option>
+        <option value="Bank Transfer">Bank Transfer</option>
+      </select>
         <label>
           Notes
           <textarea name="notes" rows="3" placeholder="Advance, check-in time, source, extra details"></textarea>

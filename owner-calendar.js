@@ -12,6 +12,25 @@ const bookingForm = document.querySelector("[data-booking-form]");
 const dialogDate = document.querySelector("[data-dialog-date]");
 const dialogRoom = document.querySelector("[data-dialog-room]");
 const syncStatus = document.querySelector("[data-sync-status]");
+const totalInput =
+  document.querySelector('[name="totalAmount"]');
+
+const advanceInput =
+  document.querySelector('[name="advancePaid"]');
+
+const balanceInput =
+  document.querySelector('[name="balanceAmount"]');
+
+function updateBalance() {
+  const total = Number(totalInput.value || 0);
+  const advance = Number(advanceInput.value || 0);
+
+  balanceInput.value =
+    Math.max(total - advance, 0);
+}
+
+totalInput.addEventListener("input", updateBalance);
+advanceInput.addEventListener("input", updateBalance);
 
 const storageKey = "spss-room-calendar-v1";
 const googleSheetWebAppUrl = "https://script.google.com/macros/s/AKfycbzwS-qv2yxi4pjhbviVDGQNpl2_RdVj30V3dUz5c9ms--pPymWZBxXgcm09-ce7yAnppA/exec";
@@ -302,6 +321,17 @@ function saveRoomBooking() {
   const phone = String(form.get("phone") || "").trim();
   const notes = String(form.get("notes") || "").trim();
   const roomType = document.querySelector('input[name="roomType"]:checked')?.value || "";;
+  const totalAmount =
+  Number(form.get("totalAmount") || 0);
+
+const advancePaid =
+  Number(form.get("advancePaid") || 0);
+
+const balanceAmount =
+  totalAmount - advancePaid;
+
+const paymentMode =
+  String(form.get("paymentMode") || "");
   if (!name || !activeRoomId) return;
 
   if (!bookings[selectedDate]) bookings[selectedDate] = {};
@@ -309,6 +339,10 @@ function saveRoomBooking() {
     name,
     phone,
     roomType,
+    totalAmount,
+    advancePaid,
+    balanceAmount,
+    paymentMode,
     notes,
     updatedAt: new Date().toISOString(),
   };
@@ -321,6 +355,10 @@ function saveRoomBooking() {
     name,
     phone,
     roomType,
+    totalAmount,
+    advancePaid,
+    balanceAmount,
+    paymentMode,
     notes,
   });
   dialog.close();
