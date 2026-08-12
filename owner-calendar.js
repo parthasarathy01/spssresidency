@@ -33,7 +33,8 @@ totalInput.addEventListener("input", updateBalance);
 advanceInput.addEventListener("input", updateBalance);
 
 const storageKey = "spss-room-calendar-v1";
-const googleSheetWebAppUrl = "https://script.google.com/macros/s/AKfycbzwS-qv2yxi4pjhbviVDGQNpl2_RdVj30V3dUz5c9ms--pPymWZBxXgcm09-ce7yAnppA/exec";
+//const googleSheetWebAppUrl = "https://script.google.com/macros/s/AKfycbzwS-qv2yxi4pjhbviVDGQNpl2_RdVj30V3dUz5c9ms--pPymWZBxXgcm09-ce7yAnppA/exec";
+const googleSheetWebAppUrl= "https://script.google.com/macros/s/AKfycbxFde_tPO6SYxwJJKEeVLqrc2m02AiHrPChBIJLmPVpQ-25ELS3M_E7GkJDZWpQOfgIDA/exec";
 const monthNames = [
   "January",
   "February",
