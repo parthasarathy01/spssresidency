@@ -756,10 +756,26 @@ h3 {
     flex-direction: column;
   }
 
+  /* Mobile: keep the year calendar readable — one month per row. */
   .stats-row,
-  .stats-row.stats-row-expanded,
-  .months-grid {
+  .stats-row.stats-row-expanded {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .months-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .month-card {
+    min-width: 0;
+  }
+
+  .weekdays span {
+    min-width: 0;
+    padding-left: 1px;
+    padding-right: 1px;
+    font-size: 0.72rem;
   }
 
   .day-button {
