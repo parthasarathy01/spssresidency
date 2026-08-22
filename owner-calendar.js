@@ -31,7 +31,7 @@ const syncErrorDialog = document.querySelector("[data-sync-error-dialog]");
 const syncErrorTitle = document.querySelector("[data-sync-error-title]");
 const syncErrorMessage = document.querySelector("[data-sync-error-message]");
 const googleSheetWebAppUrl =
-  "https://script.google.com/macros/s/AKfycbwu21fVE2KlZNDNnFXhBUlw0HtVynjl9HEF4WorF8WKbL4riaJLFVW-rxgskjGVZYY8kQ/exec";
+  "https://script.google.com/macros/s/AKfycby1NtF5nC63QlLRBnRFSFmdbBw6puYksuSwb-Tm27q7ESwh1sO4QC1bzhX2BB-j9kQJkg/exec";
 
 const storageKey = "spss-room-calendar-v2";
 const AC_RATE = 1500;
