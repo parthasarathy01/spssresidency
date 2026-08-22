@@ -153,6 +153,7 @@ h3 {
 .toolbar,
 .rooms-heading,
 .rooms-summary,
+.multi-actions,
 .legend,
 .dialog-actions {
   display: flex;
@@ -257,6 +258,12 @@ h3 {
   font-size: 0.88rem;
 }
 
+.primary-button.compact {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 0.88rem;
+}
+
 .file-button input {
   display: none;
 }
@@ -277,8 +284,18 @@ h3 {
 
 .stats-row span {
   display: block;
-  font-size: 1.45rem;
+  overflow: hidden;
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
   font-weight: 900;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stats-row small {
+  margin-top: 5px;
+  font-size: 0.62rem;
+  line-height: 1.15;
 }
 
 .legend {
@@ -408,6 +425,15 @@ h3 {
   font-weight: 900;
 }
 
+.multi-actions {
+  margin-bottom: 12px;
+}
+
+.multi-actions [disabled] {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
 .rooms-grid {
   display: grid;
   gap: 10px;
@@ -433,6 +459,78 @@ h3 {
   background: #fff7f5;
 }
 
+/* Keep AC and NON-AC visually distinct without changing the existing room layout. */
+.room-button.room-type-ac:not(.is-booked) {
+  border-left: 5px solid var(--teal);
+  background: #f7fcfb;
+}
+
+.room-button.room-type-non-ac:not(.is-booked) {
+  border-left: 5px solid var(--gold);
+  background: #fffaf0;
+}
+
+.room-button.room-type-ac .room-type {
+  display: inline-block;
+  width: fit-content;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(15, 118, 110, 0.12);
+  color: var(--teal-dark);
+}
+
+.room-button.room-type-non-ac .room-type {
+  display: inline-block;
+  width: fit-content;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(217, 155, 34, 0.16);
+  color: #8a5b00;
+}
+
+.room-button.is-booked.room-type-ac .room-type {
+  background: rgba(15, 118, 110, 0.10);
+}
+
+.room-button.is-booked.room-type-non-ac .room-type {
+  background: rgba(217, 155, 34, 0.13);
+}
+
+.room-button.is-selectable {
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+}
+
+.room-button.is-selected {
+  border-color: var(--teal);
+  background: #eef8f5;
+  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.12);
+}
+
+.room-button.is-selectable {
+  cursor: pointer;
+}
+
+.room-button.is-selectable:hover {
+  border-color: var(--teal);
+}
+
+.room-check {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 2px solid #cdd9d4;
+  border-radius: 7px;
+  color: #fff;
+  font-size: 0.92rem;
+  font-weight: 900;
+}
+
+.room-button.is-selected .room-check {
+  border-color: var(--teal);
+  background: var(--teal);
+}
+
 .room-number {
   display: grid;
   width: 44px;
@@ -449,16 +547,32 @@ h3 {
 }
 
 .room-text strong,
-.room-text span {
+.room-text > span,
+.room-text > small {
   display: block;
 }
 
-.room-text span {
+.room-text > span {
   overflow: hidden;
   color: var(--muted);
   font-size: 0.9rem;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+}
+
+.room-text .room-type {
+  margin-top: 2px;
+  color: var(--teal-dark);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.room-text span small {
+  color: #7a6b60;
+  font-size: 0.82rem;
+  font-weight: 800;
 }
 
 .room-status {
@@ -521,6 +635,68 @@ h3 {
   font-weight: 900;
 }
 
+.amount-summary {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.045);
+  overflow: hidden;
+}
+
+.amount-summary > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  min-width: 0;
+  min-height: 58px;
+  padding: 10px 14px;
+  gap: 18px;
+}
+
+.amount-summary > div + div {
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.amount-summary span {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.82rem;
+  line-height: 1.25;
+  font-weight: 800;
+}
+
+.amount-summary strong {
+  justify-self: end;
+  font-size: 1.05rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.amount-summary input {
+  width: 120px;
+  min-height: 42px;
+  margin: 0;
+  text-align: right;
+}
+
+.amount-summary [data-standard-label] {
+  white-space: normal;
+}
+
+@media (max-width: 560px) {
+  .amount-summary > div {
+    min-height: 54px;
+    padding: 9px 12px;
+    gap: 12px;
+  }
+
+  .amount-summary input {
+    width: 110px;
+  }
+}
+
 .booking-card input,
 .booking-card textarea {
   width: 100%;
@@ -581,8 +757,9 @@ h3 {
   }
 
   .stats-row,
+  .stats-row.stats-row-expanded,
   .months-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
   }
 
   .day-button {
