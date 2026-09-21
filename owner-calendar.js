@@ -11,6 +11,10 @@ const currentMonthRoomsEl = document.querySelector("[data-current-month-rooms]")
 const currentMonthReceivedEl = document.querySelector("[data-current-month-received]");
 const allTimeReceivedEl = document.querySelector("[data-all-time-received]");
 const currentMonthOutstandingEl = document.querySelector("[data-current-month-outstanding]");
+const dashboardMonthSelect = document.querySelector("[data-dashboard-month]");
+const currentMonthRoomsLabelEl = document.querySelector("[data-current-month-rooms-label]");
+const currentMonthReceivedLabelEl = document.querySelector("[data-current-month-received-label]");
+const currentMonthOutstandingLabelEl = document.querySelector("[data-current-month-outstanding-label]");
 const dialog = document.querySelector("[data-dialog]");
 const bookingForm = document.querySelector("[data-booking-form]");
 const dialogDate = document.querySelector("[data-dialog-date]");
@@ -67,6 +71,8 @@ let calculationRoomIds = [];
 let isMultiSelectMode = false;
 let selectedRoomIds = new Set();
 let pendingRequest = null;
+let selectedDashboardMonth = new Date().getMonth();
+dashboardMonthSelect.value = String(selectedDashboardMonth);
 
 function isSheetSyncEnabled() {
   return googleSheetWebAppUrl.startsWith("https://script.google.com/");
@@ -459,9 +465,9 @@ function renderStats() {
   let allTimeReceived = 0;
   let currentMonthOutstanding = 0;
 
-  const today = new Date();
-  const currentMonthKey =
-    `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+  const selectedMonthKey =
+    `${currentYear}-${String(selectedDashboardMonth + 1).padStart(2, "0")}`;
+  const selectedMonthName = monthNames[selectedDashboardMonth];
 
   Object.entries(bookings).forEach(([dateKey, roomsForDate]) => {
     const count = Object.keys(roomsForDate).length;
@@ -471,13 +477,13 @@ function renderStats() {
       if (count === rooms.length) fullDays += 1;
     }
 
-    if (dateKey.startsWith(currentMonthKey)) {
+    if (dateKey.startsWith(selectedMonthKey)) {
       currentMonthRooms += count;
     }
 
     Object.values(roomsForDate).forEach((booking) => {
       const received = getReceivedAmount(booking);
-      if (dateKey.startsWith(currentMonthKey)) {
+      if (dateKey.startsWith(selectedMonthKey)) {
         currentMonthReceived += received;
         currentMonthOutstanding += getOutstandingAmount(booking);
       }
@@ -491,6 +497,10 @@ function renderStats() {
   currentMonthReceivedEl.textContent = formatMoney(currentMonthReceived);
   currentMonthOutstandingEl.textContent = formatMoney(currentMonthOutstanding);
   allTimeReceivedEl.textContent = formatMoney(allTimeReceived);
+
+  currentMonthRoomsLabelEl.textContent = `Rooms booked in ${selectedMonthName}`;
+  currentMonthReceivedLabelEl.textContent = `Received in ${selectedMonthName}`;
+  currentMonthOutstandingLabelEl.textContent = `Remaining in ${selectedMonthName}`;
 }
 
 function openBookingDialog(roomIds) {
@@ -892,6 +902,11 @@ function copySelectedSummary() {
 
   navigator.clipboard?.writeText(lines.join("\n"));
 }
+
+dashboardMonthSelect.addEventListener("change", () => {
+  selectedDashboardMonth = Number(dashboardMonthSelect.value);
+  renderStats();
+});
 
 document.querySelector("[data-prev-year]").addEventListener("click", () => {
   currentYear -= 1;

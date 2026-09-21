@@ -39,6 +39,24 @@
           </button>
         </div>
 
+        <div class="dashboard-month-filter">
+          <label for="dashboard-month">Dashboard month</label>
+          <select id="dashboard-month" data-dashboard-month aria-label="Select dashboard month">
+            <option value="0">January</option>
+            <option value="1">February</option>
+            <option value="2">March</option>
+            <option value="3">April</option>
+            <option value="4">May</option>
+            <option value="5">June</option>
+            <option value="6">July</option>
+            <option value="7">August</option>
+            <option value="8" selected>September</option>
+            <option value="9">October</option>
+            <option value="10">November</option>
+            <option value="11">December</option>
+          </select>
+        </div>
+
         <div class="stats-row stats-row-expanded" aria-label="Booking summary">
           <div>
             <span data-total-bookings>0</span>
@@ -54,15 +72,15 @@
           </div>
           <div>
             <span data-current-month-rooms>0</span>
-            <small>Rooms booked this month</small>
+            <small data-current-month-rooms-label>Rooms booked in September</small>
           </div>
           <div>
             <span data-current-month-received>₹0</span>
-            <small>Received this month</small>
+            <small data-current-month-received-label>Received in September</small>
           </div>
           <div>
             <span data-current-month-outstanding>₹0</span>
-            <small>Remaining this month</small>
+            <small data-current-month-outstanding-label>Remaining in September</small>
           </div>
           <div>
             <span data-all-time-received>₹0</span>
