@@ -20,6 +20,7 @@ const standardAmountEl = document.querySelector("[data-standard-amount]");
 const standardAmountLabelEl = document.querySelector("[data-standard-label]");
 const finalTotalEl = document.querySelector("[data-final-total]");
 const discountInput = bookingForm.elements.discount;
+const additionalAmountInput = bookingForm.elements.additionalAmount;
 const advanceInput = bookingForm.elements.advancePaid;
 const balanceInput = bookingForm.elements.balanceAmount;
 const syncStatus = document.querySelector("[data-sync-status]");
@@ -540,9 +541,11 @@ function openBookingDialog(roomIds) {
   bookingForm.elements.paymentMode.value = existing?.paymentMode || "UPI";
 
   delete discountInput.dataset.userEdited;
+  delete additionalAmountInput.dataset.userEdited;
 
   const storedTotal = Number(existing?.totalAmount || 0);
   const storedDiscount = Number(existing?.discount || 0);
+  const storedAdditionalAmount = Math.max(Number(existing?.additionalAmount || 0), 0);
 
   let discount = storedDiscount;
   if (!existing?.discount && storedTotal > 0) {
@@ -550,6 +553,7 @@ function openBookingDialog(roomIds) {
   }
 
   discountInput.value = discount;
+  additionalAmountInput.value = storedAdditionalAmount;
   advanceInput.value = existing?.advancePaid ?? "";
 
   updateAmounts(standardAmount, storedTotal, Boolean(existing));
@@ -559,12 +563,13 @@ function openBookingDialog(roomIds) {
 
 function updateAmounts(standardAmount = calculateStandardAmount(calculationRoomIds.length ? calculationRoomIds : activeRoomIds), legacyTotal = 0, isExisting = false) {
   const discount = Math.max(Number(discountInput.value || 0), 0);
-  let total = Math.max(standardAmount - discount, 0);
+  const additionalAmount = Math.max(Number(additionalAmountInput.value || 0), 0);
+  let total = Math.max(standardAmount - discount + additionalAmount, 0);
 
   // Existing historical totals are preserved until the user changes the
   // discount. Once the discount is edited, the group total is recalculated
   // from the group's standard rent.
-  if (isExisting && legacyTotal > 0 && !discountInput.dataset.userEdited) {
+  if (isExisting && legacyTotal > 0 && !discountInput.dataset.userEdited && !additionalAmountInput.dataset.userEdited) {
     total = legacyTotal;
   }
 
@@ -580,6 +585,11 @@ discountInput.addEventListener("input", () => {
   updateAmounts();
 });
 
+additionalAmountInput.addEventListener("input", () => {
+  additionalAmountInput.dataset.userEdited = "1";
+  updateAmounts();
+});
+
 advanceInput.addEventListener("input", () => updateAmounts());
 
 function saveRoomBooking() {
@@ -589,8 +599,9 @@ function saveRoomBooking() {
   const notes = String(form.get("notes") || "").trim();
   const paymentMode = String(form.get("paymentMode") || "UPI");
   const discount = Math.max(Number(form.get("discount") || 0), 0);
+  const additionalAmount = Math.max(Number(form.get("additionalAmount") || 0), 0);
   const totalAmount = Math.max(
-    Number(bookingForm.dataset.calculatedTotal || calculateStandardAmount(calculationRoomIds.length ? calculationRoomIds : activeRoomIds) - discount),
+    Number(bookingForm.dataset.calculatedTotal || calculateStandardAmount(calculationRoomIds.length ? calculationRoomIds : activeRoomIds) - discount + additionalAmount),
     0
   );
   const advancePaid = Math.max(Number(form.get("advancePaid") || 0), 0);
@@ -651,6 +662,7 @@ function saveRoomBooking() {
     advancePaid,
     balanceAmount,
     discount,
+    additionalAmount,
     paymentMode,
     notes,
   };
@@ -679,6 +691,7 @@ function saveRoomBooking() {
           advancePaid: index === 0 ? advancePaid : "",
           balanceAmount: index === 0 ? balanceAmount : "",
           discount: index === 0 ? discount : "",
+          additionalAmount: index === 0 ? additionalAmount : "",
           paymentMode: index === 0 ? paymentMode : "",
           notes,
           bookingId,
@@ -717,6 +730,7 @@ function applyLocalRoomClear(roomIds) {
       groupFinancials[booking.bookingId] = {
         advance: Number(booking.advancePaid || 0),
         discount: Number(booking.discount || 0),
+        additionalAmount: Math.max(Number(booking.additionalAmount || 0), 0),
         paymentMode: booking.paymentMode || "",
       };
     }
@@ -725,6 +739,9 @@ function applyLocalRoomClear(roomIds) {
     }
     if (booking.discount !== "" && booking.discount !== null && typeof booking.discount !== "undefined") {
       groupFinancials[booking.bookingId].discount = Number(booking.discount || 0);
+    }
+    if (booking.additionalAmount !== "" && booking.additionalAmount !== null && typeof booking.additionalAmount !== "undefined") {
+      groupFinancials[booking.bookingId].additionalAmount = Math.max(Number(booking.additionalAmount || 0), 0);
     }
     if (booking.paymentMode) groupFinancials[booking.bookingId].paymentMode = booking.paymentMode;
   });
@@ -750,9 +767,10 @@ function applyLocalRoomClear(roomIds) {
       advance: 0,
       discount: 0,
       paymentMode: "",
+      additionalAmount: 0,
     };
     const standardAmount = calculateStandardAmount(remainingRoomIds);
-    const totalAmount = Math.max(standardAmount - financial.discount, 0);
+    const totalAmount = Math.max(standardAmount - financial.discount + financial.additionalAmount, 0);
     const balanceAmount = Math.max(totalAmount - financial.advance, 0);
 
     remainingRoomIds.forEach((roomId, index) => {
@@ -762,12 +780,14 @@ function applyLocalRoomClear(roomIds) {
         booking.advancePaid = financial.advance;
         booking.balanceAmount = balanceAmount;
         booking.discount = financial.discount;
+        booking.additionalAmount = financial.additionalAmount;
         booking.paymentMode = financial.paymentMode;
       } else {
         booking.totalAmount = "";
         booking.advancePaid = "";
         booking.balanceAmount = "";
         booking.discount = "";
+        booking.additionalAmount = "";
         booking.paymentMode = "";
       }
     });
