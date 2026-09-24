@@ -676,6 +676,31 @@ select option {
   background: var(--teal);
 }
 
+.policies {
+  padding-top: 32px;
+}
+
+.policy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.policy-card {
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(20, 32, 30, 0.05);
+}
+
+.policy-card p:not(.room-tag) {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.96rem;
+  line-height: 1.6;
+}
+
 .nearby-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
