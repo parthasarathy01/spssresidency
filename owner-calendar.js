@@ -160,14 +160,18 @@ function getReceivedAmount(booking) {
 
 function getBookingRowsForGroup(bookingId) {
   if (!bookingId) return [];
+
   const rows = [];
+
   Object.entries(bookings).forEach(([dateKey, roomsForDate]) => {
-    Object.entries(roomsForDate).forEach(([roomId, booking]) => {
+    Object.keys(roomsForDate || {}).forEach((roomId) => {
+      const booking = getActiveRecord(dateKey, roomId);
       if (booking?.bookingId === bookingId) {
         rows.push({ dateKey, roomId, booking });
       }
     });
   });
+
   return rows;
 }
 
@@ -328,6 +332,17 @@ function getDateBookings(dateKey) {
   return bookings[dateKey] || {};
 }
 
+// Google Sheets can contain historical duplicate rows for the same date + room.
+// Always use the latest record for the room so the UI never treats an array as a booking.
+function getActiveRecord(dateKey, roomId) {
+  const entry = getDateBookings(dateKey)[roomId];
+  if (Array.isArray(entry)) {
+    const valid = entry.filter(Boolean);
+    return valid.length ? valid[valid.length - 1] : null;
+  }
+  return entry || null;
+}
+
 function getBookedCount(dateKey) {
   return Object.keys(getDateBookings(dateKey)).length;
 }
@@ -414,7 +429,7 @@ function renderRooms() {
   roomsEl.innerHTML = "";
 
   rooms.forEach((room) => {
-    const booking = dateBookings[room.id];
+    const booking = getActiveRecord(selectedDate, room.id);
     const isSelected = selectedRoomIds.has(room.id);
     const isSelectable = isMultiSelectMode;
 
@@ -481,7 +496,9 @@ function renderStats() {
       currentMonthRooms += count;
     }
 
-    Object.values(roomsForDate).forEach((booking) => {
+    Object.keys(roomsForDate).forEach((roomId) => {
+      const booking = getActiveRecord(dateKey, roomId);
+      if (!booking) return;
       const received = getReceivedAmount(booking);
       if (dateKey.startsWith(selectedMonthKey)) {
         currentMonthReceived += received;
@@ -502,7 +519,6 @@ function renderStats() {
   currentMonthReceivedLabelEl.textContent = `Received in ${selectedMonthName}`;
   currentMonthOutstandingLabelEl.textContent = `Remaining in ${selectedMonthName}`;
 }
-
 function openBookingDialog(roomIds) {
   activeRoomIds = [...roomIds];
   activeRoomId = activeRoomIds[0];
@@ -510,23 +526,59 @@ function openBookingDialog(roomIds) {
   const firstRoom = getRoom(activeRoomId);
   const dateBookings = getDateBookings(selectedDate);
   const existingEntries = activeRoomIds
-    .map((id) => ({ roomId: id, booking: dateBookings[id] }))
+    .map((id) => ({ roomId: id, booking: getActiveRecord(selectedDate, id) }))
     .filter((entry) => entry.booking);
   const existing = existingEntries[0]?.booking || null;
 
   // Financial values belong to the whole BookingId group, not necessarily to
   // the room the user clicked. This is especially important when editing one
   // room from a multi-room booking.
-  const existingGroupRows = existing?.bookingId
-    ? getBookingRowsForGroup(existing.bookingId).filter((row) => row.dateKey === selectedDate)
-    : [];
+  let existingGroupRows = existing?.bookingId
+  ? getBookingRowsForGroup(existing.bookingId).filter(
+      (row) => row.dateKey === selectedDate
+    )
+  : [];
+
+// Fallback for older group bookings where BookingId may not exist
+// consistently on every room row.
+if (existingGroupRows.length <= 1 && existing) {
+  const sameDateRows = Object.keys(dateBookings)
+    .map((roomId) => ({ roomId, booking: getActiveRecord(selectedDate, roomId) }))
+    .filter(({ booking }) => booking);
+
+  const sameGroupRows = sameDateRows.filter(({ booking }) => {
+    if (existing.bookingId && booking.bookingId) {
+      return booking.bookingId === existing.bookingId;
+    }
+
+    return (
+      booking.name === existing.name &&
+      booking.phone === existing.phone
+    );
+  });
+
+  if (sameGroupRows.length > existingGroupRows.length) {
+    existingGroupRows = sameGroupRows.map(({ roomId, booking }) => ({
+      dateKey: selectedDate,
+      roomId,
+      booking
+    }));
+  }
+}
+
   calculationRoomIds = existingGroupRows.length
     ? existingGroupRows.map((row) => row.roomId)
     : [...activeRoomIds];
+  const isExistingGroup = Boolean(existing?.bookingId && existingGroupRows.length > 1);
+  const groupFinancialSource = existingGroupRows.find((row) => {
+    const booking = row.booking || {};
+    return booking.totalAmount !== "" &&
+      booking.totalAmount !== null &&
+      typeof booking.totalAmount !== "undefined";
+  })?.booking || existingGroupRows[0]?.booking || existing || null;
 
   const standardAmount = calculateStandardAmount(calculationRoomIds);
   const counts = getRoomCounts(calculationRoomIds);
-  const isExistingGroup = Boolean(existing?.bookingId && existingGroupRows.length > 1);
 
   dialogDate.textContent = formatDisplayDate(selectedDate);
 
@@ -553,23 +605,110 @@ function openBookingDialog(roomIds) {
   delete discountInput.dataset.userEdited;
   delete additionalAmountInput.dataset.userEdited;
 
-  const storedTotal = Number(existing?.totalAmount || 0);
-  const storedDiscount = Number(existing?.discount || 0);
-  const storedAdditionalAmount = Math.max(Number(existing?.additionalAmount || 0), 0);
+  // Read financial values from the group's financial-source row.
+  const storedTotal = Number(groupFinancialSource?.totalAmount || 0);
+  const storedDiscount = Number(groupFinancialSource?.discount || 0);
+  const storedAdditionalAmount = Math.max(
+    Number(groupFinancialSource?.additionalAmount || 0),
+    0
+  );
 
   let discount = storedDiscount;
-  if (!existing?.discount && storedTotal > 0) {
-    discount = Math.max(standardAmount - storedTotal, 0);
+
+  if (
+    groupFinancialSource?.discount === "" ||
+    groupFinancialSource?.discount === null ||
+    typeof groupFinancialSource?.discount === "undefined"
+  ) {
+    discount = Math.max(
+      standardAmount + storedAdditionalAmount - storedTotal,
+      0
+    );
   }
 
   discountInput.value = discount;
   additionalAmountInput.value = storedAdditionalAmount;
-  advanceInput.value = existing?.advancePaid ?? "";
 
-  updateAmounts(standardAmount, storedTotal, Boolean(existing));
+  // Read Advance Paid from the same financial-source row.
+  advanceInput.value = groupFinancialSource?.advancePaid ?? "";
+
+  updateAmounts(
+    standardAmount,
+    storedTotal,
+    Boolean(groupFinancialSource)
+  );
+
   dialog.showModal();
   bookingForm.elements.name.focus();
 }
+
+// function openBookingDialog(roomIds) {
+//   activeRoomIds = [...roomIds];
+//   activeRoomId = activeRoomIds[0];
+
+//   const firstRoom = getRoom(activeRoomId);
+//   const dateBookings = getDateBookings(selectedDate);
+//   const existingEntries = activeRoomIds
+//     .map((id) => ({ roomId: id, booking: dateBookings[id] }))
+//     .filter((entry) => entry.booking);
+//   const existing = existingEntries[0]?.booking || null;
+
+//   // Financial values belong to the whole BookingId group, not necessarily to
+//   // the room the user clicked. This is especially important when editing one
+//   // room from a multi-room booking.
+//   const existingGroupRows = existing?.bookingId
+//     ? getBookingRowsForGroup(existing.bookingId).filter((row) => row.dateKey === selectedDate)
+//     : [];
+//   calculationRoomIds = existingGroupRows.length
+//     ? existingGroupRows.map((row) => row.roomId)
+//     : [...activeRoomIds];
+
+//   const standardAmount = calculateStandardAmount(calculationRoomIds);
+//   const counts = getRoomCounts(calculationRoomIds);
+//   const isExistingGroup = Boolean(existing?.bookingId && existingGroupRows.length > 1);
+
+//   dialogDate.textContent = formatDisplayDate(selectedDate);
+
+//   if (activeRoomIds.length === 1) {
+//     dialogRoom.textContent = firstRoom.label;
+//     standardAmountLabelEl.textContent = isExistingGroup ? "Standard group rent" : "Standard room rent";
+//     bookingTypeSummary.textContent = isExistingGroup
+//       ? `${counts.ac} AC + ${counts.nonAc} Non-AC • Group rooms ${calculationRoomIds.map((id) => getRoom(id)?.short).join(", ")} • Group ${existing.bookingId}`
+//       : `Room type: ${firstRoom.type}${existing?.bookingId ? ` • Group ${existing.bookingId}` : ""}`;
+//   } else {
+//     dialogRoom.textContent =
+//       `${activeRoomIds.length} rooms selected: ${activeRoomIds.map((id) => getRoom(id)?.short).join(", ")}`;
+//     standardAmountLabelEl.textContent = "Standard group rent";
+//     bookingTypeSummary.textContent =
+//       `${counts.ac} AC + ${counts.nonAc} Non-AC • Standard rent ${formatMoney(standardAmount)}` +
+//       (existing?.bookingId ? ` • Editing group ${existing.bookingId}` : "");
+//   }
+
+//   bookingForm.elements.name.value = existing?.name || "";
+//   bookingForm.elements.phone.value = existing?.phone || "";
+//   bookingForm.elements.notes.value = existing?.notes || "";
+//   bookingForm.elements.paymentMode.value = existing?.paymentMode || "UPI";
+
+//   delete discountInput.dataset.userEdited;
+//   delete additionalAmountInput.dataset.userEdited;
+
+//   const storedTotal = Number(existing?.totalAmount || 0);
+//   const storedDiscount = Number(existing?.discount || 0);
+//   const storedAdditionalAmount = Math.max(Number(existing?.additionalAmount || 0), 0);
+
+//   let discount = storedDiscount;
+//   if (!existing?.discount && storedTotal > 0) {
+//     discount = Math.max(standardAmount - storedTotal, 0);
+//   }
+
+//   discountInput.value = discount;
+//   additionalAmountInput.value = storedAdditionalAmount;
+//   advanceInput.value = existing?.advancePaid ?? "";
+
+//   updateAmounts(standardAmount, storedTotal, Boolean(existing));
+//   dialog.showModal();
+//   bookingForm.elements.name.focus();
+// }
 
 function updateAmounts(standardAmount = calculateStandardAmount(calculationRoomIds.length ? calculationRoomIds : activeRoomIds), legacyTotal = 0, isExisting = false) {
   const discount = Math.max(Number(discountInput.value || 0), 0);
@@ -629,10 +768,10 @@ function saveRoomBooking() {
 
   const dateBookings = getDateBookings(selectedDate);
   const selectedBookings = activeRoomIds
-    .map((roomId) => dateBookings[roomId])
+    .map((roomId) => getActiveRecord(selectedDate, roomId))
     .filter(Boolean);
   const existingGroupIds = [...new Set(selectedBookings.map((booking) => booking.bookingId).filter(Boolean))];
-  const hasAvailable = activeRoomIds.some((roomId) => !dateBookings[roomId]);
+  const hasAvailable = activeRoomIds.some((roomId) => !getActiveRecord(selectedDate, roomId));
 
   if (existingGroupIds.length > 1 || (existingGroupIds.length === 1 && hasAvailable)) {
     showSyncError(
@@ -655,9 +794,13 @@ function saveRoomBooking() {
 
   const roomRows = roomsToSave.map((roomId) => {
     const room = getRoom(roomId);
+    const existingRoomBooking = getActiveRecord(selectedDate, roomId);
     return {
       roomId,
       roomType: room.type,
+      // Always send the existing RecordId when editing. BookingId remains the
+      // primary identity; RecordId is the precise row-level fallback.
+      recordId: existingRoomBooking?.recordId || "",
     };
   });
 
@@ -666,6 +809,7 @@ function saveRoomBooking() {
     date: selectedDate,
     roomId: roomsToSave[0],
     bookingId,
+    recordId: roomRows.length === 1 ? (roomRows[0].recordId || "") : "",
     name,
     phone,
     totalAmount,
@@ -687,9 +831,12 @@ function saveRoomBooking() {
   saveBookingButton.textContent = "Saving...";
 
   postToGoogleSheet(payload)
-    .then(() => {
+    .then((result) => {
       if (!bookings[selectedDate]) bookings[selectedDate] = {};
       const timestamp = new Date().toISOString();
+
+      const returnedRecordIds = result?.recordIds || {};
+      const returnedSingleRecordId = result?.recordId || "";
 
       roomsToSave.forEach((roomId, index) => {
         const room = getRoom(roomId);
@@ -705,6 +852,7 @@ function saveRoomBooking() {
           paymentMode: index === 0 ? paymentMode : "",
           notes,
           bookingId,
+          recordId: returnedRecordIds[roomId] || (roomsToSave.length === 1 ? returnedSingleRecordId : ""),
           updatedAt: timestamp,
         };
       });
@@ -734,7 +882,8 @@ function applyLocalRoomClear(roomIds) {
   const groupFinancials = {};
 
   // Capture the financial source for each affected group before removing rows.
-  Object.entries(dateBookings).forEach(([roomId, booking]) => {
+  Object.keys(dateBookings).forEach((roomId) => {
+    const booking = getActiveRecord(selectedDate, roomId);
     if (!booking?.bookingId) return;
     if (!groupFinancials[booking.bookingId]) {
       groupFinancials[booking.bookingId] = {
@@ -757,7 +906,7 @@ function applyLocalRoomClear(roomIds) {
   });
 
   roomIds.forEach((roomId) => {
-    const booking = dateBookings[roomId];
+    const booking = getActiveRecord(selectedDate, roomId);
     if (booking?.bookingId) affectedBookingIds.add(booking.bookingId);
   });
 
@@ -768,7 +917,7 @@ function applyLocalRoomClear(roomIds) {
 
   affectedBookingIds.forEach((bookingId) => {
     const remainingRoomIds = Object.keys(dateBookings).filter(
-      (roomId) => dateBookings[roomId]?.bookingId === bookingId
+      (roomId) => getActiveRecord(selectedDate, roomId)?.bookingId === bookingId
     );
 
     if (!remainingRoomIds.length) return;
@@ -784,7 +933,7 @@ function applyLocalRoomClear(roomIds) {
     const balanceAmount = Math.max(totalAmount - financial.advance, 0);
 
     remainingRoomIds.forEach((roomId, index) => {
-      const booking = dateBookings[roomId];
+      const booking = getActiveRecord(selectedDate, roomId);
       if (index === 0) {
         booking.totalAmount = totalAmount;
         booking.advancePaid = financial.advance;
@@ -874,7 +1023,7 @@ function updateMultiActions() {
     bookSelectedButton.textContent = "Book / Edit selected (0)";
   } else {
     const selectedBookings = [...selectedRoomIds]
-      .map((roomId) => getDateBookings(selectedDate)[roomId])
+      .map((roomId) => getActiveRecord(selectedDate, roomId))
       .filter(Boolean);
     const allBooked = selectedBookings.length === selectedCount;
     bookSelectedButton.textContent = `${allBooked ? "Edit selected" : "Book selected"} (${selectedCount})`;
@@ -888,7 +1037,7 @@ function copySelectedSummary() {
   const lines = [`SPSS Residency bookings for ${formatDisplayDate(selectedDate)}`];
 
   rooms.forEach((room) => {
-    const booking = dateBookings[room.id];
+    const booking = getActiveRecord(selectedDate, room.id);
     lines.push(
       `${room.short}: ${
         booking
