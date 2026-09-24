@@ -268,10 +268,85 @@ h3 {
   display: none;
 }
 
+.search-bookings {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.search-bookings input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  outline: none;
+}
+
+.search-bookings input:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+}
+
+.search-results {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+
+.search-result-item {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  padding: 10px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.search-result-item:last-child {
+  border-bottom: 0;
+}
+
+.search-result-item:hover,
+.search-result-item:focus {
+  background: #fbf8f2;
+}
+
+.search-result-item strong {
+  font-size: 0.95rem;
+}
+
+.search-result-item span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.search-result-item small {
+  color: var(--teal-dark);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.search-empty {
+  padding: 14px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 .dashboard-month-filter {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
   gap: 10px;
   margin-bottom: 12px;
   padding: 10px 12px;
@@ -686,6 +761,13 @@ h3 {
   font-weight: 900;
 }
 
+.field-hint {
+  margin-top: -4px;
+  color: var(--gold);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
 .amount-summary {
   display: grid;
   grid-template-columns: 1fr;
@@ -818,7 +900,7 @@ h3 {
     max-width: 220px;
   }
 
-  /* Mobile: keep the year calendar readable â€” one month per row. */
+  /* Mobile: keep the year calendar readable Ã¢â‚¬â€ one month per row. */
   .stats-row,
   .stats-row.stats-row-expanded {
     grid-template-columns: 1fr 1fr;

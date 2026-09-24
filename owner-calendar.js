@@ -35,6 +35,10 @@ const saveBookingButton = document.querySelector("[data-save-booking]");
 const syncErrorDialog = document.querySelector("[data-sync-error-dialog]");
 const syncErrorTitle = document.querySelector("[data-sync-error-title]");
 const syncErrorMessage = document.querySelector("[data-sync-error-message]");
+const searchWrapEl = document.querySelector("[data-search-wrap]");
+const searchInput = document.querySelector("[data-search-input]");
+const searchResultsEl = document.querySelector("[data-search-results]");
+const phoneHintEl = document.querySelector("[data-phone-hint]");
 const googleSheetWebAppUrl =
   "https://script.google.com/macros/s/AKfycbx1_obb-Sz1auKV4SSjnwJlM_ow9ubtImj1Imn_E3oIruCaANSbTzLRPab9Bz5sfGkygA/exec";
 
@@ -183,6 +187,121 @@ function makeBookingId() {
   const random = Math.random().toString(36).slice(2, 8).toUpperCase();
   return `BK-${stamp}-${random}`;
 }
+
+// Searches every date on file (not just the visible year) for a guest name
+// or mobile number match. Bookings are only ever loaded into memory after a
+// successful Google Sheets sync, so this always searches the latest data.
+function searchBookings(term) {
+  const query = term.trim().toLowerCase();
+  if (query.length < 2) return [];
+
+  const results = [];
+
+  Object.keys(bookings).forEach((dateKey) => {
+    rooms.forEach((room) => {
+      const booking = getActiveRecord(dateKey, room.id);
+      if (!booking) return;
+
+      const name = String(booking.name || "").toLowerCase();
+      const phone = String(booking.phone || "").toLowerCase();
+      if (!name.includes(query) && !phone.includes(query)) return;
+
+      results.push({ dateKey, room, booking });
+    });
+  });
+
+  // Most recent dates first so a repeat guest's latest stay shows up on top.
+  results.sort((a, b) => (a.dateKey < b.dateKey ? 1 : a.dateKey > b.dateKey ? -1 : 0));
+
+  return results.slice(0, 30);
+}
+
+function renderSearchResults(term) {
+  searchResultsEl.innerHTML = "";
+
+  if (!term.trim()) {
+    searchResultsEl.hidden = true;
+    return;
+  }
+
+  const results = searchBookings(term);
+
+  if (!results.length) {
+    searchResultsEl.hidden = false;
+    searchResultsEl.innerHTML = `<div class="search-empty">No bookings found for "${term}".</div>`;
+    return;
+  }
+
+  results.forEach(({ dateKey, room, booking }) => {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "search-result-item";
+    item.innerHTML = `
+      <strong>${booking.name || "Guest"}</strong>
+      <span>${room.label} &middot; ${formatDisplayDate(dateKey)}</span>
+      <small>${booking.phone || "No phone"} &middot; Due ${formatMoney(getOutstandingAmount(booking))}</small>
+    `;
+
+    item.addEventListener("click", () => {
+      const [year] = dateKey.split("-").map(Number);
+      currentYear = year;
+      selectedDate = dateKey;
+      clearRoomSelection();
+      renderCalendar();
+      renderRooms();
+
+      searchInput.value = "";
+      searchResultsEl.hidden = true;
+
+      openBookingDialog([room.id]);
+    });
+
+    searchResultsEl.append(item);
+  });
+
+  searchResultsEl.hidden = false;
+}
+
+searchInput.addEventListener("input", () => renderSearchResults(searchInput.value));
+
+searchInput.addEventListener("focus", () => {
+  if (searchInput.value.trim()) renderSearchResults(searchInput.value);
+});
+
+searchInput.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    searchInput.value = "";
+    searchResultsEl.hidden = true;
+    searchInput.blur();
+  }
+});
+
+document.addEventListener("click", (event) => {
+  if (!searchWrapEl.contains(event.target)) searchResultsEl.hidden = true;
+});
+
+// Soft validation only — never blocks typing or saving. Just a nudge when
+// the number doesn't look like a normal 10-digit Indian mobile number, in
+// case of a typo (extra/missing digit, stray characters, etc).
+function validatePhoneField() {
+  const raw = bookingForm.elements.phone.value.trim();
+
+  if (!raw) {
+    phoneHintEl.hidden = true;
+    return;
+  }
+
+  let digits = raw.replace(/\D/g, "");
+  if (digits.length === 12 && digits.startsWith("91")) digits = digits.slice(2);
+  if (digits.length === 11 && digits.startsWith("0")) digits = digits.slice(1);
+
+  const looksValid = /^[6-9]\d{9}$/.test(digits);
+  phoneHintEl.hidden = looksValid;
+}
+
+bookingForm.elements.phone.addEventListener("input", validatePhoneField);
+bookingForm.elements.phone.addEventListener("blur", validatePhoneField);
+
 
 function loadFromGoogleSheet() {
   return new Promise((resolve, reject) => {
@@ -601,6 +720,7 @@ if (existingGroupRows.length <= 1 && existing) {
   bookingForm.elements.phone.value = existing?.phone || "";
   bookingForm.elements.notes.value = existing?.notes || "";
   bookingForm.elements.paymentMode.value = existing?.paymentMode || "UPI";
+  validatePhoneField();
 
   delete discountInput.dataset.userEdited;
   delete additionalAmountInput.dataset.userEdited;

@@ -39,6 +39,16 @@
           </button>
         </div>
 
+        <div class="search-bookings" data-search-wrap>
+          <input
+            type="search"
+            data-search-input
+            placeholder="Search a booking by guest name or mobile number"
+            aria-label="Search bookings by guest name or mobile number"
+          />
+          <div class="search-results" data-search-results hidden></div>
+        </div>
+
         <div class="dashboard-month-filter">
           <label for="dashboard-month">Dashboard month</label>
           <select id="dashboard-month" data-dashboard-month aria-label="Select dashboard month">
@@ -144,6 +154,7 @@
         <label>
           Mobile number
           <input name="phone" type="tel" placeholder="Guest mobile number" />
+          <small class="field-hint" data-phone-hint hidden>Doesn't look like a 10-digit mobile number — you can still save.</small>
         </label>
 
         <div class="amount-summary">
