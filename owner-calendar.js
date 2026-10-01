@@ -735,10 +735,15 @@ if (existingGroupRows.length <= 1 && existing) {
 
   let discount = storedDiscount;
 
+  // Only backfill a missing discount from the legacy total-amount math when
+  // there's an actual existing booking with incomplete old data. A brand
+  // new, empty room has no groupFinancialSource at all - leave its discount
+  // at 0 rather than defaulting it to the full standard rent.
   if (
-    groupFinancialSource?.discount === "" ||
-    groupFinancialSource?.discount === null ||
-    typeof groupFinancialSource?.discount === "undefined"
+    groupFinancialSource &&
+    (groupFinancialSource.discount === "" ||
+      groupFinancialSource.discount === null ||
+      typeof groupFinancialSource.discount === "undefined")
   ) {
     discount = Math.max(
       standardAmount + storedAdditionalAmount - storedTotal,
