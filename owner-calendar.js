@@ -546,7 +546,6 @@ function renderCalendar() {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "day-button";
-      button.textContent = day;
       button.dataset.date = dateKey;
 
       const numberEl = document.createElement("span");
