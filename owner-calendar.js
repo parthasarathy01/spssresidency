@@ -549,6 +549,11 @@ function renderCalendar() {
       button.textContent = day;
       button.dataset.date = dateKey;
 
+      const numberEl = document.createElement("span");
+      numberEl.className = "day-number";
+      numberEl.textContent = day;
+      button.append(numberEl);
+
       if (dateKey === toDateKey(new Date())) button.classList.add("is-today");
       if (dateKey === selectedDate) button.classList.add("is-selected");
       if (count > 0 && count < rooms.length) button.classList.add("is-partial");

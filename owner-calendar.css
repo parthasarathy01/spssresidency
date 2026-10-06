@@ -488,13 +488,20 @@ h3 {
 
 .day-button {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
   min-height: 42px;
+  padding: 4px 2px;
   border: 0;
   border-top: 1px solid #eee8dc;
   border-left: 1px solid #eee8dc;
   background: #fff;
   color: var(--ink);
   font-weight: 900;
+  line-height: 1.1;
 }
 
 .day-button.is-empty {
@@ -520,12 +527,13 @@ h3 {
   background: #f4d3cd;
 }
 
+.day-number {
+  font-size: 0.92rem;
+}
+
 .day-count {
-  position: absolute;
-  right: 4px;
-  bottom: 3px;
   color: var(--muted);
-  font-size: 0.62rem;
+  font-size: 0.6rem;
   font-weight: 900;
 }
 
@@ -534,16 +542,13 @@ h3 {
 }
 
 .day-amount {
-  position: absolute;
-  left: 4px;
-  bottom: 3px;
   color: var(--teal-dark);
-  font-size: 0.6rem;
+  font-size: 0.58rem;
   font-weight: 800;
 }
 
 .day-button.is-selected .day-amount {
-  color: rgba(255, 255, 255, 0.72);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .rooms-heading {
