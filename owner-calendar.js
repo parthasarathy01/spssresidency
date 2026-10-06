@@ -139,6 +139,24 @@ function formatMoney(value) {
   return `₹${Number(value || 0).toLocaleString("en-IN")}`;
 }
 
+// Compact, symbol-free formatting for the small calendar day cells, e.g.
+// 4500 -> "4.5k", 15000 -> "15k", 250000 -> "2.5L", 300 -> "300".
+function formatCompactAmount(value) {
+  const amount = Number(value || 0);
+
+  if (amount >= 100000) {
+    const lakhs = amount / 100000;
+    return `${lakhs % 1 === 0 ? lakhs : lakhs.toFixed(1)}L`;
+  }
+
+  if (amount >= 1000) {
+    const thousands = amount / 1000;
+    return `${thousands % 1 === 0 ? thousands : thousands.toFixed(1)}k`;
+  }
+
+  return String(amount);
+}
+
 function getOutstandingAmount(booking) {
   if (!booking) return 0;
   const balanceRaw = booking.balanceAmount;
@@ -160,6 +178,29 @@ function getReceivedAmount(booking) {
   }
 
   return Number(booking.advancePaid || 0);
+}
+
+// Sums received/total across every room booked on a date. Only the room
+// that actually carries a group's financial figures contributes a non-zero
+// amount (the rest return 0 from getReceivedAmount/getOutstandingAmount),
+// so this naturally avoids double-counting multi-room bookings.
+function getDateRevenue(dateKey) {
+  const roomsForDate = bookings[dateKey];
+  if (!roomsForDate) return { received: 0, total: 0 };
+
+  let received = 0;
+  let total = 0;
+
+  Object.keys(roomsForDate).forEach((roomId) => {
+    const booking = getActiveRecord(dateKey, roomId);
+    if (!booking) return;
+
+    const roomReceived = getReceivedAmount(booking);
+    received += roomReceived;
+    total += roomReceived + getOutstandingAmount(booking);
+  });
+
+  return { received, total };
 }
 
 function getBookingRowsForGroup(bookingId) {
@@ -518,6 +559,17 @@ function renderCalendar() {
         countEl.className = "day-count";
         countEl.textContent = `${count}/11`;
         button.append(countEl);
+
+        const revenue = getDateRevenue(dateKey);
+        if (revenue.total > 0) {
+          const amountEl = document.createElement("span");
+          amountEl.className = "day-amount";
+          amountEl.textContent =
+            revenue.received >= revenue.total
+              ? formatCompactAmount(revenue.total)
+              : `${formatCompactAmount(revenue.received)}/${formatCompactAmount(revenue.total)}`;
+          button.append(amountEl);
+        }
       }
 
       button.addEventListener("click", () => {

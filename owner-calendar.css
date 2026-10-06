@@ -533,6 +533,19 @@ h3 {
   color: rgba(255, 255, 255, 0.72);
 }
 
+.day-amount {
+  position: absolute;
+  left: 4px;
+  bottom: 3px;
+  color: var(--teal-dark);
+  font-size: 0.6rem;
+  font-weight: 800;
+}
+
+.day-button.is-selected .day-amount {
+  color: rgba(255, 255, 255, 0.72);
+}
+
 .rooms-heading {
   justify-content: space-between;
   align-items: start;
@@ -900,7 +913,7 @@ h3 {
     max-width: 220px;
   }
 
-  /* Mobile: keep the year calendar readable Ã¢â‚¬â€ one month per row. */
+  /* Mobile: keep the year calendar readable â€” one month per row. */
   .stats-row,
   .stats-row.stats-row-expanded {
     grid-template-columns: 1fr 1fr;

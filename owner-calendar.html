@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SPSS Residency | Owner Room Calendar</title>
     <meta name="robots" content="noindex, nofollow" />
-    <link rel="stylesheet" href="owner-calendar.css" />
+    <link rel="stylesheet" id="owner-calendar-styles" />
+    <script>
+      document.getElementById("owner-calendar-styles").href = `owner-calendar.css?v=${Date.now()}`;
+    </script>
   </head>
   <body>
     <header class="owner-header">
