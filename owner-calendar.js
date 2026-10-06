@@ -4,6 +4,9 @@ const yearLabel = document.querySelector("[data-year-label]");
 const selectedDateLabel = document.querySelector("[data-selected-date]");
 const bookedCountEl = document.querySelector("[data-booked-count]");
 const availableCountEl = document.querySelector("[data-available-count]");
+const dayRevenueEl = document.querySelector("[data-day-revenue]");
+const dayReceivedEl = document.querySelector("[data-day-received]");
+const dayDueEl = document.querySelector("[data-day-due]");
 const selectedSummaryEl = document.querySelector("[data-selected-summary]");
 const totalBookingsEl = document.querySelector("[data-total-bookings]");
 const fullDaysEl = document.querySelector("[data-full-days]");
@@ -563,17 +566,6 @@ function renderCalendar() {
         countEl.className = "day-count";
         countEl.textContent = `${count}/11`;
         button.append(countEl);
-
-        const revenue = getDateRevenue(dateKey);
-        if (revenue.total > 0) {
-          const amountEl = document.createElement("span");
-          amountEl.className = "day-amount";
-          amountEl.textContent =
-            revenue.received >= revenue.total
-              ? formatCompactAmount(revenue.total)
-              : `${formatCompactAmount(revenue.received)}/${formatCompactAmount(revenue.total)}`;
-          button.append(amountEl);
-        }
       }
 
       button.addEventListener("click", () => {
@@ -601,6 +593,16 @@ function renderRooms() {
   bookedCountEl.textContent = `${bookedCount} booked`;
   availableCountEl.textContent = `${rooms.length - bookedCount} available`;
   selectedSummaryEl.textContent = `${bookedCount}/11`;
+
+  const dayRevenue = getDateRevenue(selectedDate);
+  if (dayRevenue.total > 0) {
+    dayReceivedEl.textContent = formatMoney(dayRevenue.received);
+    dayDueEl.textContent = formatMoney(Math.max(dayRevenue.total - dayRevenue.received, 0));
+    dayRevenueEl.hidden = false;
+  } else {
+    dayRevenueEl.hidden = true;
+  }
+
   roomsEl.innerHTML = "";
 
   rooms.forEach((room) => {

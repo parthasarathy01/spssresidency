@@ -557,6 +557,38 @@ h3 {
   margin-bottom: 12px;
 }
 
+.day-revenue-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.day-revenue-summary span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 0.86rem;
+}
+
+.day-revenue-summary strong {
+  font-size: 0.98rem;
+  font-weight: 900;
+}
+
+.day-revenue-summary .is-received {
+  background: rgba(19, 138, 82, 0.12);
+  color: var(--green);
+}
+
+.day-revenue-summary .is-due {
+  background: rgba(182, 66, 53, 0.12);
+  color: var(--red);
+}
+
 .rooms-summary {
   margin-bottom: 14px;
 }
