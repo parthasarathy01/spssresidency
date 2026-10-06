@@ -347,12 +347,12 @@ bookingForm.elements.phone.addEventListener("input", validatePhoneField);
 bookingForm.elements.phone.addEventListener("blur", validatePhoneField);
 
 
-function loadFromGoogleSheet() {
+function loadFromGoogleSheet({ silent = false } = {}) {
   return new Promise((resolve, reject) => {
     if (!isSheetSyncEnabled()) {
       setSyncStatus("Google Sheets sync is not configured.", "error");
       const error = new Error("The owner calendar cannot use shared data until the Apps Script Web App URL is configured.");
-      showSyncError("Google Sheets is not configured", error.message);
+      if (!silent) showSyncError("Google Sheets is not configured", error.message);
       reject(error);
       return;
     }
@@ -372,7 +372,7 @@ function loadFromGoogleSheet() {
       cleanup();
       setSyncStatus("Google Sheets did not respond.", "error");
       const error = new Error("Google Sheets did not respond within 12 seconds. The data currently visible is only the local browser backup and may be stale.");
-      showSyncError("Google Sheets read failed", error.message);
+      if (!silent) showSyncError("Google Sheets read failed", error.message);
       reject(error);
     }, 12000);
 
@@ -382,7 +382,7 @@ function loadFromGoogleSheet() {
       if (!payload?.ok) {
         setSyncStatus("Google Sheets returned an error.", "error");
         const error = new Error(payload?.error || "Google Apps Script returned an unknown error.");
-        showSyncError("Google Sheets read failed", error.message);
+        if (!silent) showSyncError("Google Sheets read failed", error.message);
         reject(error);
         return;
       }
@@ -399,7 +399,7 @@ function loadFromGoogleSheet() {
       cleanup();
       setSyncStatus("Google Sheets sync failed.", "error");
       const error = new Error("The Apps Script Web App could not be reached. Check the deployment URL and access settings.");
-      showSyncError("Google Sheets read failed", error.message);
+      if (!silent) showSyncError("Google Sheets read failed", error.message);
       reject(error);
     };
 
@@ -407,6 +407,39 @@ function loadFromGoogleSheet() {
       `${googleSheetWebAppUrl}${separator}action=list&callback=${callbackName}&cache=${Date.now()}`;
     document.body.append(script);
   });
+}
+
+// Google Apps Script Web Apps can be slow to "wake up" (cold start) or flaky
+// on weak mobile data, so one failed read shouldn't leave the owner stuck
+// staring at a blocking error dialog with stale local data. This retries
+// quietly in the background with a growing delay between attempts, and only
+// surfaces the error dialog if it's still failing after several tries.
+function loadFromGoogleSheetWithRetry(maxAttempts = 6) {
+  const delaysMs = [2000, 4000, 8000, 15000, 20000];
+
+  const attempt = (attemptNumber) =>
+    loadFromGoogleSheet({ silent: true }).catch((error) => {
+      if (attemptNumber >= maxAttempts) {
+        setSyncStatus("Google Sheets sync failed.", "error");
+        showSyncError(
+          "Google Sheets read failed",
+          `Tried ${maxAttempts} times over about a minute but Google Sheets did not respond. The data currently visible is only the local browser backup and may be stale. Check your connection and tap "Retry sync" below.`
+        );
+        throw error;
+      }
+
+      setSyncStatus(
+        `Google Sheets is slow to respond \u2014 retrying (attempt ${attemptNumber + 1} of ${maxAttempts})...`,
+        "error"
+      );
+
+      const delay = delaysMs[attemptNumber - 1] ?? 20000;
+      return new Promise((resolve) => window.setTimeout(resolve, delay)).then(() =>
+        attempt(attemptNumber + 1)
+      );
+    });
+
+  return attempt(1);
 }
 
 function postToGoogleSheet(payload) {
@@ -1258,6 +1291,11 @@ document.querySelector("[data-delete-booking]").addEventListener("click", delete
 document.querySelector("[data-copy-summary]").addEventListener("click", copySelectedSummary);
 document.querySelector("[data-close-sync-error]").addEventListener("click", () => syncErrorDialog.close());
 
+document.querySelector("[data-retry-sync]").addEventListener("click", () => {
+  syncErrorDialog.close();
+  loadFromGoogleSheetWithRetry().catch(() => {});
+});
+
 toggleMultiButton.addEventListener("click", () => {
   isMultiSelectMode = !isMultiSelectMode;
   if (!isMultiSelectMode) clearRoomSelection();
@@ -1307,4 +1345,4 @@ document.querySelector("[data-import]").addEventListener("change", async (event)
 
 renderCalendar();
 renderRooms();
-loadFromGoogleSheet().catch(() => {});
+loadFromGoogleSheetWithRetry().catch(() => {});

@@ -225,7 +225,10 @@
         <p class="kicker">Google Sheets Sync</p>
         <h3 data-sync-error-title>Sync failed</h3>
         <p data-sync-error-message></p>
-        <button type="button" class="primary-button" data-close-sync-error>Close</button>
+        <div class="dialog-actions">
+          <button type="button" class="ghost-button" data-close-sync-error>Close</button>
+          <button type="button" class="primary-button" data-retry-sync>Retry sync</button>
+        </div>
       </div>
     </dialog>
 
