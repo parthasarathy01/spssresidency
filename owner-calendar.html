@@ -195,10 +195,19 @@
           <input name="advancePaid" type="number" min="0" step="1" />
         </label>
 
-        <label>
-          Balance Amount (₹)
-          <input name="balanceAmount" type="number" readonly />
-        </label>
+        <div class="balance-row">
+          <label class="balance-field">
+            <span data-balance-label>Due Amount (₹)</span>
+            <input name="balanceAmount" type="number" min="0" step="1" readonly data-balance-input />
+          </label>
+          <label class="paid-toggle" title="Switch on when the balance has been received">
+            <span>Paid</span>
+            <input type="checkbox" data-balance-toggle />
+            <i aria-hidden="true"></i>
+          </label>
+        </div>
+        <small class="field-hint balance-hint" data-balance-hint hidden></small>
+        <p class="balance-note" data-balance-note hidden></p>
 
         <label>
           Payment Mode

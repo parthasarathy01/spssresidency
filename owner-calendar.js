@@ -869,7 +869,7 @@ if (existingGroupRows.length <= 1 && existing) {
     settleDue: 0,
     settleTotal: storedTotal,
   };
-  balanceHintEl.hidden = true;
+  if (balanceHintEl) balanceHintEl.hidden = true;
 
   updateAmounts(...dialogAmountArgs);
 
@@ -982,6 +982,14 @@ let balanceSettlement = {
 
 function renderBalanceSection(total) {
   const advance = Math.max(Number(advanceInput.value || 0), 0);
+
+  // If an older owner-calendar.html (without the Paid toggle) is loaded, keep
+  // the plain read-only balance behaviour instead of failing.
+  if (!balanceToggle || !balanceLabelEl || !balanceHintEl || !balanceNoteEl) {
+    balanceInput.value = Math.max(total - advance, 0);
+    return;
+  }
+
   const state = balanceSettlement;
   const editable = state.on && !state.locked;
 
@@ -1063,7 +1071,7 @@ function resetFreshSettlement() {
   }
 }
 
-balanceToggle.addEventListener("change", () => {
+balanceToggle?.addEventListener("change", () => {
   if (balanceToggle.checked) startBalanceSettlement();
   else cancelBalanceSettlement();
 });
