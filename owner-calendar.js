@@ -30,6 +30,10 @@ const discountInput = bookingForm.elements.discount;
 const additionalAmountInput = bookingForm.elements.additionalAmount;
 const advanceInput = bookingForm.elements.advancePaid;
 const balanceInput = bookingForm.elements.balanceAmount;
+const balanceToggle = document.querySelector("[data-balance-toggle]");
+const balanceLabelEl = document.querySelector("[data-balance-label]");
+const balanceHintEl = document.querySelector("[data-balance-hint]");
+const balanceNoteEl = document.querySelector("[data-balance-note]");
 const syncStatus = document.querySelector("[data-sync-status]");
 const toggleMultiButton = document.querySelector("[data-toggle-multi]");
 const bookSelectedButton = document.querySelector("[data-book-selected]");
@@ -164,7 +168,10 @@ function getOutstandingAmount(booking) {
   if (!booking) return 0;
   const balanceRaw = booking.balanceAmount;
   if (balanceRaw === "" || balanceRaw === null || typeof balanceRaw === "undefined") {
-    return Math.max(Number(booking.totalAmount || 0) - Number(booking.advancePaid || 0), 0);
+    return Math.max(
+      Number(booking.totalAmount || 0) - Number(booking.advancePaid || 0) - Number(booking.balancePaid || 0),
+      0
+    );
   }
   return Math.max(Number(balanceRaw || 0), 0);
 }
@@ -180,7 +187,8 @@ function getReceivedAmount(booking) {
     return Number(booking.totalAmount || booking.advancePaid || 0);
   }
 
-  return Number(booking.advancePaid || 0);
+  // Received = the advance plus any balance collected later.
+  return Number(booking.advancePaid || 0) + Number(booking.balancePaid || 0);
 }
 
 // Sums received/total across every room booked on a date. Only the room
@@ -652,7 +660,7 @@ function renderRooms() {
 
     const bookingText = booking
       ? `${booking.name}` +
-        `<br><small>Adv ${formatMoney(booking.advancePaid || 0)} | Due ${formatMoney(booking.balanceAmount || 0)}</small>`
+        `<br><small>Adv ${formatMoney(booking.advancePaid || 0)} | Bal ${formatMoney(booking.balancePaid || 0)} | Due ${formatMoney(booking.balanceAmount || 0)}</small>`
       : "Available";
 
     button.innerHTML = `
@@ -848,11 +856,22 @@ if (existingGroupRows.length <= 1 && existing) {
   // Read Advance Paid from the same financial-source row.
   advanceInput.value = groupFinancialSource?.advancePaid ?? "";
 
-  updateAmounts(
-    standardAmount,
-    storedTotal,
-    Boolean(groupFinancialSource)
-  );
+  // A booking that already has a balance payment opens with the Paid toggle
+  // on and the amount locked, so the amount received is always visible.
+  const storedBalancePaid = Math.max(Number(groupFinancialSource?.balancePaid || 0), 0);
+  dialogAmountArgs = [standardAmount, storedTotal, Boolean(groupFinancialSource)];
+  balanceSettlement = {
+    on: storedBalancePaid > 0,
+    locked: storedBalancePaid > 0,
+    amount: storedBalancePaid,
+    baseDiscount: discount,
+    restoreUserEdited: false,
+    settleDue: 0,
+    settleTotal: storedTotal,
+  };
+  balanceHintEl.hidden = true;
+
+  updateAmounts(...dialogAmountArgs);
 
   dialog.showModal();
   bookingForm.elements.name.focus();
@@ -940,22 +959,170 @@ function updateAmounts(standardAmount = calculateStandardAmount(calculationRoomI
 
   standardAmountEl.textContent = formatMoney(standardAmount);
   finalTotalEl.textContent = formatMoney(total);
-  balanceInput.value = Math.max(total - Number(advanceInput.value || 0), 0);
 
   bookingForm.dataset.calculatedTotal = String(total);
+  renderBalanceSection(total);
 }
 
+// --- Balance settlement (Paid toggle) -------------------------------------
+// AdvancePaid is never overwritten. When the balance is received, the Paid
+// toggle stores that amount separately as BalancePaid. If the guest pays less
+// than the due (bargaining), the shortfall is added to the Discount so the
+// booking settles to a due of 0.
+let dialogAmountArgs = [];
+let balanceSettlement = {
+  on: false,
+  locked: false,
+  amount: 0,
+  baseDiscount: 0,
+  restoreUserEdited: false,
+  settleDue: 0,
+  settleTotal: 0,
+};
+
+function renderBalanceSection(total) {
+  const advance = Math.max(Number(advanceInput.value || 0), 0);
+  const state = balanceSettlement;
+  const editable = state.on && !state.locked;
+
+  balanceToggle.checked = state.on;
+  balanceLabelEl.textContent = state.on ? "Balance Paid (₹)" : "Due Amount (₹)";
+  balanceInput.readOnly = !editable;
+  balanceInput.classList.toggle("is-editable", editable);
+
+  if (!state.on) {
+    const due = Math.max(total - advance, 0);
+    balanceInput.value = due;
+    balanceToggle.disabled = due <= 0;
+    balanceNoteEl.hidden = true;
+    balanceHintEl.hidden = true;
+    return;
+  }
+
+  balanceToggle.disabled = false;
+  if (!(editable && document.activeElement === balanceInput)) {
+    balanceInput.value = state.amount;
+  }
+
+  const due = Math.max(total - advance - state.amount, 0);
+  const shortfall = editable ? Math.max(state.settleDue - state.amount, 0) : 0;
+  balanceNoteEl.textContent =
+    `Due ${formatMoney(due)}` +
+    (shortfall > 0 ? ` \u00b7 ${formatMoney(shortfall)} added to Discount` : "");
+  balanceNoteEl.hidden = false;
+}
+
+function startBalanceSettlement() {
+  const total = Number(bookingForm.dataset.calculatedTotal || 0);
+  const advance = Math.max(Number(advanceInput.value || 0), 0);
+  const due = Math.max(total - advance, 0);
+
+  if (due <= 0) {
+    balanceToggle.checked = false;
+    return;
+  }
+
+  balanceSettlement = {
+    on: true,
+    locked: false,
+    amount: due,
+    baseDiscount: Number(discountInput.value || 0),
+    restoreUserEdited: Boolean(discountInput.dataset.userEdited),
+    settleDue: due,
+    settleTotal: total,
+  };
+  balanceHintEl.hidden = true;
+  renderBalanceSection(total);
+}
+
+function cancelBalanceSettlement() {
+  const previous = balanceSettlement;
+  const wasFresh = previous.on && !previous.locked;
+  balanceSettlement = { ...previous, on: false, locked: false, amount: 0 };
+  balanceHintEl.hidden = true;
+
+  // Undo a bargain that had not been saved yet. A saved settlement keeps its
+  // discount, so the remaining due simply shows again.
+  if (wasFresh && Number(discountInput.value || 0) !== previous.baseDiscount) {
+    discountInput.value = previous.baseDiscount;
+    if (previous.restoreUserEdited) discountInput.dataset.userEdited = "1";
+    else delete discountInput.dataset.userEdited;
+    updateAmounts(...dialogAmountArgs);
+    return;
+  }
+
+  renderBalanceSection(Number(bookingForm.dataset.calculatedTotal || 0));
+}
+
+// Editing the discount, additional amount or advance by hand while a fresh
+// settlement is on resets the toggle, so the received amount always matches
+// what was actually due.
+function resetFreshSettlement() {
+  if (balanceSettlement.on && !balanceSettlement.locked) {
+    balanceSettlement = { ...balanceSettlement, on: false, amount: 0 };
+  }
+}
+
+balanceToggle.addEventListener("change", () => {
+  if (balanceToggle.checked) startBalanceSettlement();
+  else cancelBalanceSettlement();
+});
+
+balanceInput.addEventListener("input", () => {
+  const state = balanceSettlement;
+  if (!state.on || state.locked) return;
+
+  balanceHintEl.hidden = true;
+  let amount = Math.max(Number(balanceInput.value || 0), 0);
+  let clamped = false;
+
+  if (amount > state.settleDue) {
+    amount = state.settleDue;
+    balanceInput.value = amount;
+    clamped = true;
+  }
+
+  state.amount = amount;
+  const shortfall = state.settleDue - amount;
+
+  if (shortfall > 0) {
+    const standard = calculateStandardAmount(
+      calculationRoomIds.length ? calculationRoomIds : activeRoomIds
+    );
+    const additional = Math.max(Number(additionalAmountInput.value || 0), 0);
+    const desiredTotal = state.settleTotal - shortfall;
+    discountInput.value = Math.max(standard + additional - desiredTotal, 0);
+    discountInput.dataset.userEdited = "1";
+    updateAmounts();
+  } else {
+    discountInput.value = state.baseDiscount;
+    if (state.restoreUserEdited) discountInput.dataset.userEdited = "1";
+    else delete discountInput.dataset.userEdited;
+    updateAmounts(...dialogAmountArgs);
+  }
+
+  if (clamped) {
+    balanceHintEl.textContent = `Can't be more than the due ${formatMoney(state.settleDue)}.`;
+    balanceHintEl.hidden = false;
+  }
+});
+
 discountInput.addEventListener("input", () => {
+  resetFreshSettlement();
   discountInput.dataset.userEdited = "1";
   updateAmounts();
 });
 
 additionalAmountInput.addEventListener("input", () => {
+  resetFreshSettlement();
   additionalAmountInput.dataset.userEdited = "1";
   updateAmounts();
 });
 
-advanceInput.addEventListener("input", () => updateAmounts());
+advanceInput.addEventListener("input", () => {
+  resetFreshSettlement();
+  updateAmounts();
+});
 
 function saveRoomBooking() {
   const form = new FormData(bookingForm);
@@ -970,14 +1137,15 @@ function saveRoomBooking() {
     0
   );
   const advancePaid = Math.max(Number(form.get("advancePaid") || 0), 0);
-  const balanceAmount = Math.max(totalAmount - advancePaid, 0);
+  const balancePaid = balanceSettlement.on ? Math.max(Number(balanceSettlement.amount) || 0, 0) : 0;
+  const balanceAmount = Math.max(totalAmount - advancePaid - balancePaid, 0);
 
   if (!name || activeRoomIds.length === 0) return;
 
-  if (advancePaid > totalAmount) {
+  if (advancePaid + balancePaid > totalAmount) {
     showSyncError(
       "Invalid payment amount",
-      "Advance Paid cannot be greater than the final Total Amount."
+      "Advance Paid plus Balance Paid cannot be greater than the final Total Amount."
     );
     return;
   }
@@ -1030,6 +1198,7 @@ function saveRoomBooking() {
     phone,
     totalAmount,
     advancePaid,
+    balancePaid,
     balanceAmount,
     discount,
     additionalAmount,
@@ -1062,6 +1231,7 @@ function saveRoomBooking() {
           roomType: room.type,
           totalAmount: index === 0 ? totalAmount : "",
           advancePaid: index === 0 ? advancePaid : "",
+          balancePaid: index === 0 ? balancePaid : "",
           balanceAmount: index === 0 ? balanceAmount : "",
           discount: index === 0 ? discount : "",
           additionalAmount: index === 0 ? additionalAmount : "",
@@ -1104,6 +1274,7 @@ function applyLocalRoomClear(roomIds) {
     if (!groupFinancials[booking.bookingId]) {
       groupFinancials[booking.bookingId] = {
         advance: Number(booking.advancePaid || 0),
+        balancePaid: Math.max(Number(booking.balancePaid || 0), 0),
         discount: Number(booking.discount || 0),
         additionalAmount: Math.max(Number(booking.additionalAmount || 0), 0),
         paymentMode: booking.paymentMode || "",
@@ -1111,6 +1282,9 @@ function applyLocalRoomClear(roomIds) {
     }
     if (booking.advancePaid !== "" && booking.advancePaid !== null && typeof booking.advancePaid !== "undefined") {
       groupFinancials[booking.bookingId].advance = Number(booking.advancePaid || 0);
+    }
+    if (booking.balancePaid !== "" && booking.balancePaid !== null && typeof booking.balancePaid !== "undefined") {
+      groupFinancials[booking.bookingId].balancePaid = Math.max(Number(booking.balancePaid || 0), 0);
     }
     if (booking.discount !== "" && booking.discount !== null && typeof booking.discount !== "undefined") {
       groupFinancials[booking.bookingId].discount = Number(booking.discount || 0);
@@ -1140,19 +1314,21 @@ function applyLocalRoomClear(roomIds) {
 
     const financial = groupFinancials[bookingId] || {
       advance: 0,
+      balancePaid: 0,
       discount: 0,
       paymentMode: "",
       additionalAmount: 0,
     };
     const standardAmount = calculateStandardAmount(remainingRoomIds);
     const totalAmount = Math.max(standardAmount - financial.discount + financial.additionalAmount, 0);
-    const balanceAmount = Math.max(totalAmount - financial.advance, 0);
+    const balanceAmount = Math.max(totalAmount - financial.advance - financial.balancePaid, 0);
 
     remainingRoomIds.forEach((roomId, index) => {
       const booking = getActiveRecord(selectedDate, roomId);
       if (index === 0) {
         booking.totalAmount = totalAmount;
         booking.advancePaid = financial.advance;
+        booking.balancePaid = financial.balancePaid;
         booking.balanceAmount = balanceAmount;
         booking.discount = financial.discount;
         booking.additionalAmount = financial.additionalAmount;
@@ -1160,6 +1336,7 @@ function applyLocalRoomClear(roomIds) {
       } else {
         booking.totalAmount = "";
         booking.advancePaid = "";
+        booking.balancePaid = "";
         booking.balanceAmount = "";
         booking.discount = "";
         booking.additionalAmount = "";
@@ -1259,7 +1436,7 @@ function copySelectedSummary() {
         booking
           ? `${booking.roomType || room.type} • ${booking.name}` +
             `${booking.phone ? ` (${booking.phone})` : ""}` +
-            ` - Advance ${formatMoney(booking.advancePaid || 0)} / Total ${formatMoney(booking.totalAmount || 0)}`
+            ` - Advance ${formatMoney(booking.advancePaid || 0)}${booking.balancePaid ? ` + Balance ${formatMoney(booking.balancePaid)}` : ""} / Total ${formatMoney(booking.totalAmount || 0)}`
           : "Available"
       }`
     );

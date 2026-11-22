@@ -818,6 +818,89 @@ h3 {
   font-weight: 700;
 }
 
+.balance-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.booking-card .balance-field input.is-editable {
+  border-color: var(--gold);
+  background: rgba(217, 155, 34, 0.12);
+}
+
+.booking-card .balance-field input[readonly]:not(.is-editable) {
+  opacity: 0.78;
+}
+
+.booking-card .paid-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 4px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.booking-card .paid-toggle input {
+  position: absolute;
+  width: 1px;
+  min-height: 0;
+  height: 1px;
+  padding: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.booking-card .paid-toggle i {
+  position: relative;
+  display: block;
+  width: 50px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  transition: background 0.2s ease;
+}
+
+.booking-card .paid-toggle i::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s ease;
+}
+
+.booking-card .paid-toggle input:checked + i {
+  background: var(--green);
+}
+
+.booking-card .paid-toggle input:checked + i::after {
+  transform: translateX(22px);
+}
+
+.booking-card .paid-toggle input:disabled + i {
+  opacity: 0.4;
+}
+
+.booking-card .paid-toggle input:focus-visible + i {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.balance-note {
+  margin: -4px 0 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
 .amount-summary {
   display: grid;
   grid-template-columns: 1fr;
