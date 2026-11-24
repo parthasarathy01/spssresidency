@@ -751,6 +751,12 @@ h3 {
   font-weight: 800;
 }
 
+/* The money line stays on one row; slightly smaller so it fits beside the status label. */
+.room-text span small.room-money {
+  font-size: 0.72rem;
+  letter-spacing: -0.01em;
+}
+
 .room-status {
   color: var(--green);
   font-size: 0.78rem;
@@ -1001,6 +1007,69 @@ h3 {
   color: #fff;
 }
 
+.vacate-button {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(19, 138, 82, 0.55);
+  border-radius: 7px;
+  padding: 0 16px;
+  background: rgba(19, 138, 82, 0.22);
+  color: #fff;
+  font-weight: 900;
+}
+
+.vacate-button[hidden] {
+  display: none;
+}
+
+.vacate-button.is-undo {
+  border-color: rgba(217, 155, 34, 0.6);
+  background: rgba(217, 155, 34, 0.16);
+}
+
+/* Three buttons do not fit on one phone row: Vacated gets its own row above. */
+@media (max-width: 560px) {
+  .booking-card .dialog-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .booking-card .dialog-actions .vacate-button {
+    grid-column: 1 / -1;
+    order: -1;
+  }
+}
+
+.earlier-guest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.earlier-guest[hidden] {
+  display: none;
+}
+
+.earlier-guest button {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  padding: 4px 11px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.room-button.is-vacated .room-text > span {
+  font-style: italic;
+}
+
 @media (max-width: 1060px) {
   .owner-shell {
     grid-template-columns: 1fr;
@@ -1033,7 +1102,7 @@ h3 {
     max-width: 220px;
   }
 
-  /* Mobile: keep the year calendar readable â€” one month per row. */
+  /* Mobile: keep the year calendar readable Ã¢â‚¬â€ one month per row. */
   .stats-row,
   .stats-row.stats-row-expanded {
     grid-template-columns: 1fr 1fr;
