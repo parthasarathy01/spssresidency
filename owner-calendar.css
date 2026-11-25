@@ -900,6 +900,25 @@ h3 {
   outline-offset: 2px;
 }
 
+.booking-card input[type="date"] {
+  color-scheme: dark;
+}
+
+.stay-note {
+  margin: -4px 0 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.stay-note[hidden] {
+  display: none;
+}
+
+.stay-note.is-conflict {
+  color: #ffb4a8;
+}
+
 .balance-note {
   margin: -4px 0 0;
   color: rgba(255, 255, 255, 0.72);

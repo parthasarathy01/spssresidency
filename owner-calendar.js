@@ -41,6 +41,8 @@ const clearSelectionButton = document.querySelector("[data-clear-selection]");
 const saveBookingButton = document.querySelector("[data-save-booking]");
 const vacateButton = document.querySelector("[data-vacate-booking]");
 const earlierGuestEl = document.querySelector("[data-earlier-guest]");
+const checkoutInput = bookingForm.elements.checkout;
+const stayNoteEl = document.querySelector("[data-stay-note]");
 const syncErrorDialog = document.querySelector("[data-sync-error-dialog]");
 const syncErrorTitle = document.querySelector("[data-sync-error-title]");
 const syncErrorMessage = document.querySelector("[data-sync-error-message]");
@@ -84,6 +86,13 @@ let vacatedBookings = loadVacatedBookings();
 let viewingVacated = false;
 let dialogVacatedBookingId = "";
 let dialogGroupRows = [];
+// Multi-night stays: the check-in date, how many nights the form currently
+// shows, and how many the saved booking had (0 = a new booking).
+const MAX_STAY_NIGHTS = 60;
+let dialogCheckIn = "";
+let dialogNights = 1;
+let dialogStoredNights = 0;
+let dialogStandardLabelBase = "Standard room rent";
 let currentYear = new Date().getFullYear();
 let selectedDate = toDateKey(new Date());
 let activeRoomId = null;
@@ -265,7 +274,10 @@ function searchBookings(term) {
   if (query.length < 2) return [];
 
   const results = [];
+  const firstNight = buildFirstNightMap();
   const consider = (dateKey, room, booking, isVacated) => {
+    // A stay appears once, on its first night.
+    if (booking.bookingId && firstNight[booking.bookingId] && firstNight[booking.bookingId] !== dateKey) return;
     const name = String(booking.name || "").toLowerCase();
     const phone = String(booking.phone || "").toLowerCase();
     if (!name.includes(query) && !phone.includes(query)) return;
@@ -626,6 +638,291 @@ function getDialogGroupRows(bookingId) {
     : getBookingRowsForGroup(bookingId).filter((row) => row.dateKey === selectedDate);
 }
 
+// --- Multi-night stays -----------------------------------------------------
+// A stay is one booking with a row per room per night, all sharing a BookingId.
+// The money is kept on the first night's first room only.
+function parseDateKey(dateKey) {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function addDays(dateKey, days) {
+  const date = parseDateKey(dateKey);
+  date.setDate(date.getDate() + days);
+  return toDateKey(date);
+}
+
+function daysBetween(fromKey, toKey) {
+  const [fy, fm, fd] = fromKey.split("-").map(Number);
+  const [ty, tm, td] = toKey.split("-").map(Number);
+  return Math.round((Date.UTC(ty, tm - 1, td) - Date.UTC(fy, fm - 1, fd)) / 86400000);
+}
+
+function listDates(startKey, nights) {
+  return Array.from({ length: nights }, (_, index) => addDays(startKey, index));
+}
+
+function formatShortDate(dateKey) {
+  return parseDateKey(dateKey).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+}
+
+function getAllVacatedRowsForGroup(bookingId) {
+  if (!bookingId) return [];
+  const rows = [];
+  Object.keys(vacatedBookings).forEach((dateKey) => {
+    rows.push(...getVacatedRowsForGroup(bookingId, dateKey));
+  });
+  return rows;
+}
+
+// Every row of a booking across all its dates (active or vacated).
+function getStayRows(bookingId) {
+  if (!bookingId) return [];
+  return viewingVacated ? getAllVacatedRowsForGroup(bookingId) : getBookingRowsForGroup(bookingId);
+}
+
+// bookingId -> sorted list of the dates it occupies, for the room cards.
+function buildStayIndex() {
+  const found = {};
+  Object.keys(bookings).forEach((dateKey) => {
+    Object.keys(bookings[dateKey] || {}).forEach((roomId) => {
+      const record = getActiveRecord(dateKey, roomId);
+      if (!record || !record.bookingId) return;
+      if (!found[record.bookingId]) found[record.bookingId] = new Set();
+      found[record.bookingId].add(dateKey);
+    });
+  });
+  const index = {};
+  Object.keys(found).forEach((bookingId) => {
+    index[bookingId] = [...found[bookingId]].sort();
+  });
+  return index;
+}
+
+function buildFirstNightMap() {
+  const first = {};
+  const note = (record, dateKey) => {
+    if (!record || !record.bookingId) return;
+    if (!first[record.bookingId] || dateKey < first[record.bookingId]) first[record.bookingId] = dateKey;
+  };
+  Object.keys(bookings).forEach((dateKey) => {
+    Object.keys(bookings[dateKey] || {}).forEach((roomId) => note(getActiveRecord(dateKey, roomId), dateKey));
+  });
+  Object.keys(vacatedBookings).forEach((dateKey) => {
+    Object.values(vacatedBookings[dateKey] || {}).forEach((list) => list.forEach((record) => note(record, dateKey)));
+  });
+  return first;
+}
+
+function dialogRoomIds() {
+  return calculationRoomIds.length ? calculationRoomIds : activeRoomIds;
+}
+
+function dialogStandardAmount() {
+  return calculateStandardAmount(dialogRoomIds()) * dialogNights;
+}
+
+function nightsFromCheckout() {
+  const value = checkoutInput && checkoutInput.value;
+  if (!value) return 1;
+  return Math.min(Math.max(daysBetween(dialogCheckIn, value), 1), MAX_STAY_NIGHTS);
+}
+
+function describeStay(checkIn, nights) {
+  if (nights <= 1) return "";
+  const lastNight = addDays(checkIn, nights - 1);
+  const dates = listDates(checkIn, nights);
+  const sameMonth = checkIn.slice(0, 7) === lastNight.slice(0, 7);
+  const span =
+    nights <= 5 && sameMonth
+      ? `${dates.map((key) => Number(key.slice(8))).join(", ")} ${formatShortDate(checkIn).split(" ").slice(1).join(" ")}`
+      : `${formatShortDate(checkIn)} to ${formatShortDate(lastNight)}`;
+  return `${nights} nights: ${span}. Free again on ${formatShortDate(addDays(lastNight, 1))}.`;
+}
+
+// First room/date that another guest already holds, ignoring this booking.
+function findStayConflict(dates, roomIds, bookingId) {
+  for (const dateKey of dates) {
+    for (const roomId of roomIds) {
+      const record = getActiveRecord(dateKey, roomId);
+      if (record && record.bookingId !== bookingId) {
+        return { dateKey, roomId, name: record.name || "another guest" };
+      }
+    }
+  }
+  return null;
+}
+
+function refreshStayUi() {
+  const roomCount = dialogRoomIds().length;
+  standardAmountLabelEl.textContent =
+    dialogStandardLabelBase +
+    (dialogNights > 1 ? ` (${roomCount} ${roomCount === 1 ? "room" : "rooms"} \u00d7 ${dialogNights} nights)` : "");
+
+  if (!stayNoteEl) return;
+
+  let text = describeStay(dialogCheckIn, dialogNights);
+  let conflict = null;
+
+  if (!viewingVacated && dialogNights > 1) {
+    const bookingId = dialogRecord(activeRoomIds[0])?.bookingId || "";
+    conflict = findStayConflict(listDates(dialogCheckIn, dialogNights), dialogRoomIds(), bookingId);
+    if (conflict) {
+      text = `${getRoom(conflict.roomId)?.label || conflict.roomId} is already booked on ${formatShortDate(conflict.dateKey)} by ${conflict.name}.`;
+    }
+  }
+
+  stayNoteEl.textContent = text;
+  stayNoteEl.hidden = !text;
+  stayNoteEl.classList.toggle("is-conflict", Boolean(conflict));
+}
+
+function onCheckoutChange() {
+  if (viewingVacated || !checkoutInput || !dialogCheckIn) return;
+
+  if (checkoutInput.value) {
+    const wanted = daysBetween(dialogCheckIn, checkoutInput.value);
+    if (wanted < 0) checkoutInput.value = dialogCheckIn;
+    if (wanted > MAX_STAY_NIGHTS) checkoutInput.value = addDays(dialogCheckIn, MAX_STAY_NIGHTS);
+  }
+
+  const nights = nightsFromCheckout();
+  if (nights === dialogNights) return;
+
+  dialogNights = nights;
+  resetFreshSettlement();
+  // The total now follows the rent for the new number of nights.
+  discountInput.dataset.userEdited = "1";
+  refreshStayUi();
+  updateAmounts();
+}
+
+// Replaces every local row of one booking with the saved stay.
+function applyLocalStaySave({ bookingId, rooms: stayRooms, dates, fields, recordIds, vacated }) {
+  Object.keys(bookings).forEach((dateKey) => {
+    Object.keys(bookings[dateKey] || {}).forEach((roomId) => {
+      if (getActiveRecord(dateKey, roomId)?.bookingId === bookingId) delete bookings[dateKey][roomId];
+    });
+  });
+  Object.keys(vacatedBookings).forEach((dateKey) => {
+    Object.keys(vacatedBookings[dateKey]).forEach((roomId) => {
+      vacatedBookings[dateKey][roomId] = vacatedBookings[dateKey][roomId].filter((item) => item.bookingId !== bookingId);
+      if (!vacatedBookings[dateKey][roomId].length) delete vacatedBookings[dateKey][roomId];
+    });
+    if (!Object.keys(vacatedBookings[dateKey]).length) delete vacatedBookings[dateKey];
+  });
+
+  const timestamp = new Date().toISOString();
+
+  dates.forEach((dateKey) => {
+    stayRooms.forEach((roomId, roomIndex) => {
+      const isFirst = dateKey === dates[0] && roomIndex === 0;
+      const record = {
+        name: fields.name,
+        phone: fields.phone,
+        roomType: getRoom(roomId).type,
+        totalAmount: isFirst ? fields.totalAmount : "",
+        advancePaid: isFirst ? fields.advancePaid : "",
+        balancePaid: isFirst ? fields.balancePaid : "",
+        balanceAmount: isFirst ? fields.balanceAmount : "",
+        discount: isFirst ? fields.discount : "",
+        additionalAmount: isFirst ? fields.additionalAmount : "",
+        paymentMode: isFirst ? fields.paymentMode : "",
+        notes: fields.notes,
+        bookingId,
+        recordId: recordIds[`${dateKey}::${roomId}`] || "",
+        updatedAt: timestamp,
+        vacated,
+      };
+
+      if (vacated) {
+        if (!vacatedBookings[dateKey]) vacatedBookings[dateKey] = {};
+        if (!vacatedBookings[dateKey][roomId]) vacatedBookings[dateKey][roomId] = [];
+        vacatedBookings[dateKey][roomId].push(record);
+      } else {
+        if (!bookings[dateKey]) bookings[dateKey] = {};
+        bookings[dateKey][roomId] = record;
+      }
+    });
+  });
+
+  saveBookings();
+}
+
+// Removes every row of a booking from both local stores.
+function applyLocalStayClear(bookingId) {
+  Object.keys(bookings).forEach((dateKey) => {
+    Object.keys(bookings[dateKey] || {}).forEach((roomId) => {
+      if (getActiveRecord(dateKey, roomId)?.bookingId === bookingId) delete bookings[dateKey][roomId];
+    });
+  });
+  Object.keys(vacatedBookings).forEach((dateKey) => {
+    Object.keys(vacatedBookings[dateKey]).forEach((roomId) => {
+      vacatedBookings[dateKey][roomId] = vacatedBookings[dateKey][roomId].filter((item) => item.bookingId !== bookingId);
+      if (!vacatedBookings[dateKey][roomId].length) delete vacatedBookings[dateKey][roomId];
+    });
+    if (!Object.keys(vacatedBookings[dateKey]).length) delete vacatedBookings[dateKey];
+  });
+  saveBookings();
+  renderCalendar();
+  renderRooms();
+}
+
+async function clearWholeStay() {
+  const bookingId = dialogRecord(activeRoomIds[0])?.bookingId;
+  if (!bookingId) return;
+
+  const rows = getStayRows(bookingId);
+  const nights = new Set(rows.map((row) => row.dateKey)).size;
+  const roomCount = new Set(rows.map((row) => row.roomId)).size;
+
+  const confirmed = window.confirm(
+    `Clear this whole stay (${nights} nights, ${roomCount} ${roomCount === 1 ? "room" : "rooms"})?\n\nEvery date is cleared and the rooms become available again.`
+  );
+  if (!confirmed) return;
+
+  applyLocalStayClear(bookingId);
+  dialog.close();
+  isMultiSelectMode = false;
+  clearRoomSelection();
+  calculationRoomIds = [];
+  setSyncStatus("Clearing booking from Google Sheets...");
+
+  try {
+    await postToGoogleSheet({ action: "deleteStay", bookingId });
+    loadFromGoogleSheet().catch(() => {});
+  } catch (error) {
+    try {
+      await loadFromGoogleSheet();
+    } catch (_) {
+      // Keep the original write error as the user-facing message.
+    }
+    showSyncError("Booking was NOT fully cleared", error?.message || "Google Sheets did not confirm the delete.");
+  }
+}
+
+// Vacated: if the guest is leaving before the booked check-out, the stay is
+// first shortened to end today (the rest is released and the total follows),
+// then the booking is saved and vacated like any other.
+function startVacate() {
+  const today = toDateKey(new Date());
+  const lastNight = addDays(dialogCheckIn, dialogNights - 1);
+
+  if (lastNight > today && checkoutInput) {
+    const name = String(bookingForm.elements.name.value || "this guest").trim();
+    const released = `${formatShortDate(addDays(today, 1))}${lastNight > addDays(today, 1) ? ` to ${formatShortDate(lastNight)}` : ""}`;
+    const confirmed = window.confirm(
+      `${name} is booked until ${formatShortDate(lastNight)}.\n\nVacate today and release ${released}? The total is recalculated for the nights stayed.`
+    );
+    if (!confirmed) return;
+
+    checkoutInput.value = addDays(today, 1);
+    onCheckoutChange();
+  }
+
+  saveRoomBooking({ vacateAfterSave: true });
+}
+
 function renderCalendar() {
   yearLabel.textContent = currentYear;
   calendarEl.innerHTML = "";
@@ -721,8 +1018,13 @@ function renderRooms() {
 
   roomsEl.innerHTML = "";
 
+  const stayIndex = buildStayIndex();
+
   rooms.forEach((room) => {
     const booking = getActiveRecord(selectedDate, room.id);
+    const stayDays = booking && booking.bookingId ? stayIndex[booking.bookingId] : null;
+    const stayNights = stayDays ? stayDays.length : 1;
+    const stayDay = stayDays ? stayDays.indexOf(selectedDate) + 1 : 1;
     const isSelected = selectedRoomIds.has(room.id);
     const isSelectable = isMultiSelectMode;
     const latestVacated = booking ? null : getLatestVacated(selectedDate, room.id);
@@ -735,8 +1037,10 @@ function renderRooms() {
       `${isSelected ? " is-selected" : ""}`;
 
     const bookingText = booking
-      ? `${booking.name}` +
-        `<br><small class="room-money">Adv: ${formatMoney(booking.advancePaid || 0)}, Bal paid: ${formatMoney(booking.balancePaid || 0)}, Due: ${formatMoney(booking.balanceAmount || 0)}</small>`
+      ? `${booking.name}${stayNights > 1 ? ` \u00b7 Day ${stayDay} of ${stayNights}` : ""}` +
+        (stayNights > 1 && stayDay > 1
+          ? `<br><small class="room-money">Amounts on ${formatShortDate(stayDays[0])}</small>`
+          : `<br><small class="room-money">Adv: ${formatMoney(booking.advancePaid || 0)}, Bal paid: ${formatMoney(booking.balancePaid || 0)}, Due: ${formatMoney(booking.balanceAmount || 0)}</small>`)
       : latestVacated
         ? `Vacated: ${escapeHtml(latestVacated.name)}`
         : "Available";
@@ -876,6 +1180,17 @@ if (!viewingVacated && existingGroupRows.length <= 1 && existing) {
   }
 }
 
+  // A multi-night stay keeps its money on the first night, so read the stay
+  // from its first night whichever night was opened.
+  const stayRows = existing?.bookingId ? getStayRows(existing.bookingId) : [];
+  const stayDates = [...new Set(stayRows.map((row) => row.dateKey))].sort();
+  const isStay = stayDates.length > 1;
+  if (isStay) existingGroupRows = stayRows.filter((row) => row.dateKey === stayDates[0]);
+
+  dialogCheckIn = isStay ? stayDates[0] : selectedDate;
+  dialogStoredNights = isStay ? stayDates.length : existing ? 1 : 0;
+  dialogNights = isStay ? stayDates.length : 1;
+
   calculationRoomIds = existingGroupRows.length
     ? existingGroupRows.map((row) => row.roomId)
     : [...activeRoomIds];
@@ -887,7 +1202,7 @@ if (!viewingVacated && existingGroupRows.length <= 1 && existing) {
       typeof booking.totalAmount !== "undefined";
   })?.booking || existingGroupRows[0]?.booking || existing || null;
 
-  const standardAmount = calculateStandardAmount(calculationRoomIds);
+  const standardAmount = calculateStandardAmount(calculationRoomIds) * dialogNights;
   const counts = getRoomCounts(calculationRoomIds);
 
   dialogDate.textContent = formatDisplayDate(selectedDate);
@@ -908,6 +1223,14 @@ if (!viewingVacated && existingGroupRows.length <= 1 && existing) {
   }
 
   if (viewingVacated) bookingTypeSummary.textContent += " \u2022 Vacated guest";
+
+  if (checkoutInput) {
+    checkoutInput.min = dialogCheckIn;
+    checkoutInput.value = addDays(dialogCheckIn, dialogNights);
+    checkoutInput.disabled = viewingVacated;
+  }
+  dialogStandardLabelBase = standardAmountLabelEl.textContent;
+  refreshStayUi();
 
   bookingForm.elements.name.value = existing?.name || "";
   bookingForm.elements.phone.value = existing?.phone || "";
@@ -1043,7 +1366,7 @@ if (!viewingVacated && existingGroupRows.length <= 1 && existing) {
 //   bookingForm.elements.name.focus();
 // }
 
-function updateAmounts(standardAmount = calculateStandardAmount(calculationRoomIds.length ? calculationRoomIds : activeRoomIds), legacyTotal = 0, isExisting = false) {
+function updateAmounts(standardAmount = dialogStandardAmount(), legacyTotal = 0, isExisting = false) {
   const discount = Math.max(Number(discountInput.value || 0), 0);
   const additionalAmount = Math.max(Number(additionalAmountInput.value || 0), 0);
   let total = Math.max(standardAmount - discount + additionalAmount, 0);
@@ -1192,9 +1515,7 @@ balanceInput.addEventListener("input", () => {
   const shortfall = state.settleDue - amount;
 
   if (shortfall > 0) {
-    const standard = calculateStandardAmount(
-      calculationRoomIds.length ? calculationRoomIds : activeRoomIds
-    );
+    const standard = dialogStandardAmount();
     const additional = Math.max(Number(additionalAmountInput.value || 0), 0);
     const desiredTotal = state.settleTotal - shortfall;
     discountInput.value = Math.max(standard + additional - desiredTotal, 0);
@@ -1241,7 +1562,7 @@ function updateVacateUi(existing, groupRows) {
       existing.recordId &&
       groupRows.length &&
       activeRoomIds.every((id) => groupRows.some((row) => row.roomId === id)) &&
-      (viewingVacated || selectedDate <= toDateKey(new Date()))
+      (viewingVacated || (dialogCheckIn || selectedDate) <= toDateKey(new Date()))
   );
 
   vacateButton.hidden = !canShow;
@@ -1297,37 +1618,44 @@ function openVacatedBooking(dateKey, bookingId) {
 }
 
 function applyLocalVacate(bookingId) {
-  const forDate = bookings[selectedDate] || {};
+  if (!bookingId) return;
 
-  Object.keys(forDate).forEach((roomId) => {
-    const record = getActiveRecord(selectedDate, roomId);
-    if (record?.bookingId !== bookingId) return;
+  // A stay is vacated as a whole, so look through every date for this booking.
+  Object.keys(bookings).forEach((dateKey) => {
+    const forDate = bookings[dateKey] || {};
+    Object.keys(forDate).forEach((roomId) => {
+      const record = getActiveRecord(dateKey, roomId);
+      if (record?.bookingId !== bookingId) return;
 
-    record.vacated = true;
-    if (!vacatedBookings[selectedDate]) vacatedBookings[selectedDate] = {};
-    if (!vacatedBookings[selectedDate][roomId]) vacatedBookings[selectedDate][roomId] = [];
-    vacatedBookings[selectedDate][roomId].push(record);
-    delete forDate[roomId];
+      record.vacated = true;
+      if (!vacatedBookings[dateKey]) vacatedBookings[dateKey] = {};
+      if (!vacatedBookings[dateKey][roomId]) vacatedBookings[dateKey][roomId] = [];
+      vacatedBookings[dateKey][roomId].push(record);
+      delete forDate[roomId];
+    });
   });
 
   saveBookings();
 }
 
 function applyLocalUnvacate(bookingId) {
-  const forDate = vacatedBookings[selectedDate] || {};
+  if (!bookingId) return;
 
-  Object.keys(forDate).forEach((roomId) => {
-    const record = forDate[roomId].find((item) => item.bookingId === bookingId);
-    if (!record) return;
+  Object.keys(vacatedBookings).forEach((dateKey) => {
+    const forDate = vacatedBookings[dateKey];
+    Object.keys(forDate).forEach((roomId) => {
+      const record = forDate[roomId].find((item) => item.bookingId === bookingId);
+      if (!record) return;
 
-    record.vacated = false;
-    if (!bookings[selectedDate]) bookings[selectedDate] = {};
-    bookings[selectedDate][roomId] = record;
-    forDate[roomId] = forDate[roomId].filter((item) => item !== record);
-    if (!forDate[roomId].length) delete forDate[roomId];
+      record.vacated = false;
+      if (!bookings[dateKey]) bookings[dateKey] = {};
+      bookings[dateKey][roomId] = record;
+      forDate[roomId] = forDate[roomId].filter((item) => item !== record);
+      if (!forDate[roomId].length) delete forDate[roomId];
+    });
+    if (!Object.keys(forDate).length) delete vacatedBookings[dateKey];
   });
 
-  if (!Object.keys(forDate).length) delete vacatedBookings[selectedDate];
   saveBookings();
 }
 
@@ -1348,14 +1676,15 @@ function applyLocalVacatedClear(roomIds) {
 
 function undoVacated() {
   const bookingId = dialogVacatedBookingId;
-  const group = getVacatedRowsForGroup(bookingId, selectedDate);
+  const isStay = dialogStoredNights > 1;
+  const group = isStay ? getAllVacatedRowsForGroup(bookingId) : getVacatedRowsForGroup(bookingId, selectedDate);
 
   for (const row of group) {
-    const current = getActiveRecord(selectedDate, row.roomId);
+    const current = getActiveRecord(row.dateKey, row.roomId);
     if (current) {
       showSyncError(
         "Cannot undo vacated",
-        `${getRoom(row.roomId)?.label || row.roomId} is already booked by ${current.name}. Clear that booking first.`
+        `${getRoom(row.roomId)?.label || row.roomId} is already booked by ${current.name}${isStay ? ` on ${formatShortDate(row.dateKey)}` : ""}. Clear that booking first.`
       );
       return;
     }
@@ -1363,7 +1692,13 @@ function undoVacated() {
 
   if (!window.confirm("Bring this booking back as an active booking?")) return;
 
-  postToGoogleSheet({ action: "setVacated", date: selectedDate, bookingId, vacated: "FALSE" })
+  postToGoogleSheet({
+    action: "setVacated",
+    date: selectedDate,
+    bookingId,
+    vacated: "FALSE",
+    ...(isStay ? { scope: "stay" } : {}),
+  })
     .then(() => {
       applyLocalUnvacate(bookingId);
       dialog.close();
@@ -1379,19 +1714,43 @@ function saveRoomBooking(options = {}) {
   const form = new FormData(bookingForm);
   const name = String(form.get("name") || "").trim();
   const phone = String(form.get("phone") || "").trim();
-  const notes = String(form.get("notes") || "").trim();
+  let notes = String(form.get("notes") || "").trim();
   const paymentMode = String(form.get("paymentMode") || "UPI");
   const discount = Math.max(Number(form.get("discount") || 0), 0);
   const additionalAmount = Math.max(Number(form.get("additionalAmount") || 0), 0);
   const totalAmount = Math.max(
-    Number(bookingForm.dataset.calculatedTotal || calculateStandardAmount(calculationRoomIds.length ? calculationRoomIds : activeRoomIds) - discount + additionalAmount),
+    Number(bookingForm.dataset.calculatedTotal || dialogStandardAmount() - discount + additionalAmount),
     0
   );
-  const advancePaid = Math.max(Number(form.get("advancePaid") || 0), 0);
-  const balancePaid = balanceSettlement.on ? Math.max(Number(balanceSettlement.amount) || 0, 0) : 0;
-  const balanceAmount = Math.max(totalAmount - advancePaid - balancePaid, 0);
+  let advancePaid = Math.max(Number(form.get("advancePaid") || 0), 0);
+  let balancePaid = balanceSettlement.on ? Math.max(Number(balanceSettlement.amount) || 0, 0) : 0;
 
   if (!name || activeRoomIds.length === 0) return;
+
+  // A shortened stay can leave the guest having paid more than the new total.
+  // Offer a refund: the advance is reduced and a note records the original.
+  const stayShortened = !viewingVacated && dialogStoredNights > dialogNights;
+  if (stayShortened && advancePaid + balancePaid > totalAmount) {
+    const received = advancePaid + balancePaid;
+    const refund = received - totalAmount;
+    const confirmedRefund = window.confirm(
+      `${name} has paid ${formatMoney(received)}, but the shortened stay costs ${formatMoney(totalAmount)}.\n\nRefund ${formatMoney(refund)} to the guest? Advance Paid is reduced and a note is added to Notes.`
+    );
+    if (!confirmedRefund) return;
+
+    const originalAdvance = advancePaid;
+    const fromAdvance = Math.min(refund, advancePaid);
+    advancePaid -= fromAdvance;
+    balancePaid -= refund - fromAdvance;
+    notes = [
+      notes,
+      `Refunded ${formatMoney(refund)} on ${formatShortDate(toDateKey(new Date()))} (stay shortened; advance was ${formatMoney(originalAdvance)}).`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  const balanceAmount = Math.max(totalAmount - advancePaid - balancePaid, 0);
 
   if (advancePaid + balancePaid > totalAmount) {
     showSyncError(
@@ -1403,7 +1762,7 @@ function saveRoomBooking(options = {}) {
 
   // Vacating needs a started booking with nothing left to pay.
   if (options.vacateAfterSave) {
-    if (selectedDate > toDateKey(new Date())) {
+    if ((dialogCheckIn || selectedDate) > toDateKey(new Date())) {
       showSyncError("Cannot vacate yet", "A booking that has not started cannot be vacated.");
       return;
     }
@@ -1452,7 +1811,7 @@ function saveRoomBooking(options = {}) {
     };
   });
 
-  const payload = {
+  let payload = {
     action: roomsToSave.length > 1 ? "saveMultiple" : "save",
     date: selectedDate,
     roomId: roomsToSave[0],
@@ -1478,10 +1837,57 @@ function saveRoomBooking(options = {}) {
     payload.roomType = roomRows[0].roomType;
   }
 
+  // A booking over several nights (or an edit of one) is saved as a whole stay.
+  const isStaySave = dialogNights > 1 || dialogStoredNights > 1;
+  let stayRooms = roomsToSave;
+  let stayDates = [];
+
+  if (isStaySave) {
+    const moneyRoom = dialogGroupRows.find(
+      (row) => row.booking && row.booking.totalAmount !== "" && row.booking.totalAmount != null
+    )?.roomId;
+    if (moneyRoom && roomsToSave.includes(moneyRoom)) {
+      stayRooms = [moneyRoom, ...roomsToSave.filter((id) => id !== moneyRoom)];
+    }
+
+    stayDates = viewingVacated
+      ? [...new Set(getAllVacatedRowsForGroup(bookingId).map((row) => row.dateKey))].sort()
+      : listDates(dialogCheckIn, dialogNights);
+
+    if (!viewingVacated) {
+      const conflict = findStayConflict(stayDates, stayRooms, bookingId);
+      if (conflict) {
+        showSyncError(
+          "Room not available",
+          `${getRoom(conflict.roomId)?.label || conflict.roomId} is already booked on ${formatShortDate(conflict.dateKey)} by ${conflict.name}. Choose other dates or rooms. Nothing was saved.`
+        );
+        return;
+      }
+    }
+
+    payload = {
+      action: "saveStay",
+      bookingId,
+      name,
+      phone,
+      totalAmount,
+      advancePaid,
+      balancePaid,
+      balanceAmount,
+      discount,
+      additionalAmount,
+      paymentMode,
+      notes,
+      vacated: viewingVacated ? "TRUE" : "FALSE",
+      rooms: JSON.stringify(stayRooms.map((roomId) => ({ roomId, roomType: getRoom(roomId).type }))),
+      dates: JSON.stringify(stayDates),
+    };
+  }
+
   if (options.vacateAfterSave) {
     const roomNames = roomsToSave.map((id) => getRoom(id)?.short || id).join(", ");
     const confirmed = window.confirm(
-      `Vacate ${name} from ${roomsToSave.length > 1 ? "rooms" : "room"} ${roomNames}?\n\nThe booking is saved first, then the room is free to book again for this date.`
+      `Vacate ${name} from ${roomsToSave.length > 1 ? "rooms" : "room"} ${roomNames}?\n\nThe booking is saved first, then ${isStaySave ? "the rooms are" : "the room is"} free to book again${isStaySave ? "" : " for this date"}.`
     );
     if (!confirmed) return;
   }
@@ -1497,7 +1903,27 @@ function saveRoomBooking(options = {}) {
       const returnedRecordIds = result?.recordIds || {};
       const returnedSingleRecordId = result?.recordId || "";
 
-      roomsToSave.forEach((roomId, index) => {
+      if (isStaySave) {
+        applyLocalStaySave({
+          bookingId,
+          rooms: stayRooms,
+          dates: stayDates,
+          fields: {
+            name,
+            phone,
+            totalAmount,
+            advancePaid,
+            balancePaid,
+            balanceAmount,
+            discount,
+            additionalAmount,
+            paymentMode,
+            notes,
+          },
+          recordIds: returnedRecordIds,
+          vacated: viewingVacated,
+        });
+      } else roomsToSave.forEach((roomId, index) => {
         const room = getRoom(roomId);
         const savedRecord = {
           name,
@@ -1544,7 +1970,13 @@ function saveRoomBooking(options = {}) {
 
       // The booking is saved; now mark it vacated. If this second step fails the
       // booking stays active and saved, and we say so.
-      return postToGoogleSheet({ action: "setVacated", date: selectedDate, bookingId, vacated: "TRUE" })
+      return postToGoogleSheet({
+        action: "setVacated",
+        date: selectedDate,
+        bookingId,
+        vacated: "TRUE",
+        ...(isStaySave ? { scope: "stay" } : {}),
+      })
         .then(() => {
           applyLocalVacate(bookingId);
           finishSave();
@@ -1660,6 +2092,12 @@ function applyLocalRoomClear(roomIds) {
 
 async function deleteRoomBooking() {
   if (activeRoomIds.length === 0) return;
+
+  // A multi-night stay is cleared as a whole, on every date.
+  if (dialogStoredNights > 1) {
+    await clearWholeStay();
+    return;
+  }
 
   const idsToDelete = [...activeRoomIds];
   // Target the exact records, so clearing one guest never removes another
@@ -1783,8 +2221,10 @@ document.querySelector("[data-close-dialog]").addEventListener("click", () => {
 document.querySelector("[data-delete-booking]").addEventListener("click", deleteRoomBooking);
 vacateButton?.addEventListener("click", () => {
   if (viewingVacated) undoVacated();
-  else saveRoomBooking({ vacateAfterSave: true });
+  else startVacate();
 });
+checkoutInput?.addEventListener("input", onCheckoutChange);
+checkoutInput?.addEventListener("change", onCheckoutChange);
 document.querySelector("[data-copy-summary]").addEventListener("click", copySelectedSummary);
 document.querySelector("[data-close-sync-error]").addEventListener("click", () => syncErrorDialog.close());
 
